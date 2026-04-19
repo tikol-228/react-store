@@ -1,19 +1,34 @@
 import React from "react";
-import { Search, Sun, ShoppingBag, User } from "lucide-react";
+import { Search, Sun, ShoppingBag, User, ChevronDown } from "lucide-react";
+import logo from '../icons/logo.jpeg'
+
+const menu = [
+  { name: "Главная" },
+  {
+    name: "Бренды",
+    children: [
+      { name: "DIBI Milano" },
+      { name: "Germaine de Capuccini" },
+    ],
+  },
+  { name: "Профессиональный уход" },
+  { name: "Домашний уход" },
+  { name: "Оплата" },
+  { name: "Доставка" },
+  { name: "Возврат товара" },
+  { name: "Контакты" },
+];
 
 const Header: React.FC = () => {
   return (
     <header className="w-full border-b border-gray-200 bg-white">
       {/* TOP */}
       <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-
         {/* LOGO */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#0f3d2e] flex items-center justify-center text-white font-bold">
-            r
-          </div>
+          <img src={logo} className="w-16 h-16 rounded-full flex items-center"/>
           <span className="text-xl font-semibold text-gray-800">
-            resik
+            Art Capital Estetic
           </span>
         </div>
 
@@ -21,7 +36,7 @@ const Header: React.FC = () => {
         <div className="relative w-[500px] max-lg:w-[300px] hidden sm:block">
           <input
             type="text"
-            placeholder="Search for more than 50,000 products"
+            placeholder="Поиск среди более чем 50 000 товаров"
             className="w-full rounded-full bg-gray-100 py-3 pl-4 pr-10 outline-none focus:ring-2 focus:ring-[#0f3d2e]/20"
           />
           <Search
@@ -47,14 +62,34 @@ const Header: React.FC = () => {
       {/* NAV */}
       <nav className="w-full">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-center gap-10 text-gray-600">
-          {["Home", "Shop", "Brands", "Sale", "Discover", "Services", "Events"].map((item) => (
-            <a
-              key={item}
-              href="#"
-              className="hover:text-[#0f3d2e] transition font-medium"
-            >
-              {item}
-            </a>
+          {menu.map((item) => (
+            <div key={item.name} className="relative group">
+              {/* LINK */}
+              <a
+                href="#"
+                className="flex items-center gap-1 hover:text-[#0f3d2e] transition font-medium"
+              >
+                {item.name}
+                {item.children && <ChevronDown size={16} />}
+              </a>
+
+              {/* DROPDOWN */}
+              {item.children && (
+                <div className="absolute left-0 top-full mt-2 w-52 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <div className="flex flex-col py-2">
+                    {item.children.map((child) => (
+                      <a
+                        key={child.name}
+                        href="#"
+                        className="px-4 py-2 hover:bg-gray-100 transition"
+                      >
+                        {child.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </nav>

@@ -2,47 +2,49 @@ import React from "react";
 
 type ProductCardProps = {
   title: string;
-  price: number;
+  category: string;
+  price: string;
+  rating: number;
   image: string;
-  oldPrice?: number;
+  isNew?: boolean;
 };
 
 const ProductCard: React.FC<ProductCardProps> = ({
   title,
+  category,
   price,
+  rating,
   image,
-  oldPrice,
+  isNew,
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden">
-      
-      {/* image */}
-      <div className="w-full h-56 overflow-hidden bg-gray-100">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-full object-cover hover:scale-105 transition duration-300"
-        />
+    <div className="w-[306px] rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition">
+      {/* Image */}
+      <div className="relative flex items-center justify-center bg-gray-100 rounded-xl h-[220px] mb-4">
+        {isNew && (
+          <span className="absolute top-3 left-3 bg-green-800 text-white text-xs px-3 py-1 rounded-full">
+            New
+          </span>
+        )}
+        <img src={image} alt={title} className="h-32 object-contain" />
       </div>
 
-      {/* content */}
-      <div className="p-4">
-        <h3 className="text-sm font-medium text-black">{title}</h3>
-
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-black font-semibold">{price} ₽</span>
-
-          {oldPrice && (
-            <span className="text-sm text-black/40 line-through">
-              {oldPrice} ₽
-            </span>
-          )}
+      {/* Category + Rating */}
+      <div className="flex items-center justify-between text-sm text-gray-500 mb-1">
+        <span>{category}</span>
+        <div className="flex items-center gap-1 text-orange-500">
+          <span>★</span>
+          <span className="text-gray-700">{rating}</span>
         </div>
-
-        <button className="mt-4 w-full py-2 bg-black text-white text-sm rounded-md hover:opacity-90 transition">
-          В корзину
-        </button>
       </div>
+
+      {/* Title */}
+      <h3 className="text-sm font-medium text-gray-800 leading-snug mb-2">
+        {title}
+      </h3>
+
+      {/* Price */}
+      <div className="text-lg font-semibold text-gray-900">{price}</div>
     </div>
   );
 };

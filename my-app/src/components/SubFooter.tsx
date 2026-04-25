@@ -8,18 +8,18 @@ interface SubFooterProps {
 
 const SubFooter = ({ icon, title, desc }: SubFooterProps) => {
   return (
-    <div className="flex items-center gap-4 px-6 py-4 rounded-md flex-1">
-      {/* Icon */}
-      <div className="w-12 h-12 flex items-center justify-center">
+    <div className="flex flex-col items-center text-center gap-4 group">
+      {/* Icon Container */}
+      <div className="transition-transform duration-300 group-hover:-translate-y-1">
         {icon}
       </div>
 
-      {/* Text */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900">
+      {/* Text Content */}
+      <div className="space-y-1">
+        <h3 className="text-sm font-bold text-[#1A1A1A] uppercase tracking-wider">
           {title}
         </h3>
-        <p className="text-sm text-gray-500">
+        <p className="text-xs text-gray-400 leading-relaxed">
           {desc}
         </p>
       </div>

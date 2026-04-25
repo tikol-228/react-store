@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Footer: React.FC = () => {
   return (
@@ -24,6 +25,7 @@ const Footer: React.FC = () => {
             <li>Отслеживание заказа</li>
             <li>Центр помощи</li>
             <li>Частые вопросы</li>
+            <li><Link to="/admin" className="hover:text-black">Админ-панель</Link></li>
           </ul>
         </div>
 

@@ -5,23 +5,35 @@ import { ShoppingBag } from "lucide-react";
 type ProductCardProps = {
   id: string;
   title: string;
-  price: number;
+  category: string;
+  price: string;
+  rating: number;
   image: string;
+<<<<<<< HEAD
   oldPrice?: number;
   category: string;
   rating: number;
   badge?: string;
+=======
+  isNew?: boolean;
+>>>>>>> c09282e0a734d5648a4c63fb54911e75197f25d8
 };
 
 const ProductCard: React.FC<ProductCardProps> = ({
   id,
   title,
+  category,
   price,
+  rating,
   image,
+<<<<<<< HEAD
   oldPrice,
   category,
   rating,
   badge,
+=======
+  isNew,
+>>>>>>> c09282e0a734d5648a4c63fb54911e75197f25d8
 }) => {
   const { addToCart } = useCart();
 
@@ -32,6 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
+<<<<<<< HEAD
     <div className="group flex flex-col relative">
       {/* image container */}
       <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#F6F6F6] mb-4 rounded-2xl">
@@ -86,8 +99,35 @@ const ProductCard: React.FC<ProductCardProps> = ({
               ${oldPrice.toFixed(2)}
             </span>
           )}
+=======
+    <div className="w-[306px] rounded-2xl bg-white p-4 shadow-sm hover:shadow-md transition">
+      {/* Image */}
+      <div className="relative flex items-center justify-center bg-gray-100 rounded-xl h-[220px] mb-4">
+        {isNew && (
+          <span className="absolute top-3 left-3 bg-green-800 text-white text-xs px-3 py-1 rounded-full">
+            New
+          </span>
+        )}
+        <img src={image} alt={title} className="h-32 object-contain" />
+      </div>
+
+      {/* Category + Rating */}
+      <div className="flex items-center justify-between text-sm text-gray-500 mb-1">
+        <span>{category}</span>
+        <div className="flex items-center gap-1 text-orange-500">
+          <span>★</span>
+          <span className="text-gray-700">{rating}</span>
+>>>>>>> c09282e0a734d5648a4c63fb54911e75197f25d8
         </div>
       </div>
+
+      {/* Title */}
+      <h3 className="text-sm font-medium text-gray-800 leading-snug mb-2">
+        {title}
+      </h3>
+
+      {/* Price */}
+      <div className="text-lg font-semibold text-gray-900">{price}</div>
     </div>
   );
 };

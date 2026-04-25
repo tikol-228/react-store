@@ -19,7 +19,7 @@ const menu = [
   { name: "Оплата" },
   { name: "Доставка" },
   { name: "Возврат товара" },
-  { name: "Контакты" },
+  { name: "Контакты", path: "/contacts" },
 ];
 
 const Header: React.FC = () => {

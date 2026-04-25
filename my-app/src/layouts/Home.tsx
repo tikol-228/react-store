@@ -4,7 +4,6 @@ import plane from '../icons/plane.svg'
 import returnIcon from '../icons/returnIcon.svg'
 import secure from '../icons/secure.svg'
 import support from '../icons/support.svg'
-import Banner from '../components/Banner'
 import Footer from '../components/Footer'
 import ProductsGrid from '../components/ProductsGrid'
 
@@ -13,7 +12,6 @@ const Home = () => {
     <>
     <div className="bg-[#FAF9F6]">
       <Header />
-      <Banner />
       
       {/* Featured Categories */}
       <section className="py-20">

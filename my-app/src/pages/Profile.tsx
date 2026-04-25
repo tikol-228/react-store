@@ -1,28 +1,117 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { Mail, Phone, MapPin, Lock, User, LogOut, Edit2, Save, X, AlertCircle } from 'lucide-react';
 
 const Profile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserProfile, updateUserPassword, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // Edit mode states
+  const [isEditing, isSetEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  // Form states
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+  });
+  
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!user) {
-    // В реальном приложении можно редиректить в useEffect, но для простоты так
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Пожалуйста, войдите в аккаунт</h2>
-          <Link to="/login" className="text-[#1B4B43] hover:underline">Перейти ко входу</Link>
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-gray-900">Пожалуйста, войдите в аккаунт</h2>
+          <Link to="/login" className="inline-block px-6 py-3 bg-[#1B4B43] text-white rounded-lg hover:bg-[#2a6b5f] transition-colors">
+            Перейти ко входу
+          </Link>
         </div>
       </div>
     );
   }
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (err) {
+      setError('Ошибка при выходе');
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      await updateUserProfile({
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+      });
+      setSuccess('Профиль успешно обновлён');
+      isSetEditing(false);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError('Ошибка при обновлении профиля');
+      console.error('Profile update error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError('Новые пароли не совпадают');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setError('Новый пароль должен быть минимум 6 символов');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await updateUserPassword(passwordData.newPassword);
+      setSuccess('Пароль успешно изменён');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      setIsChangingPassword(false);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      if (err.code === 'auth/requires-recent-login') {
+        setError('Пожалуйста, заново войдите для безопасности');
+      } else {
+        setError('Ошибка при смене пароля');
+      }
+      console.error('Password change error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,81 +119,261 @@ const Profile: React.FC = () => {
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="bg-[#1B4B43] px-8 py-12 text-white">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-3xl font-bold border-4 border-white/30">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold">{user.name}</h1>
-                <p className="text-white/70">{user.email}</p>
-                {user.isAdmin && (
-                  <span className="mt-2 inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-medium border border-white/30">
-                    Администратор
-                  </span>
-                )}
-              </div>
+        {/* Header с аватаром */}
+        <div className="bg-gradient-to-r from-[#1B4B43] to-[#2a6b5f] rounded-3xl px-8 py-12 text-white mb-8">
+          <div className="flex items-center gap-8">
+            <div className="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center text-5xl font-bold border-4 border-white/30 backdrop-blur">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold mb-2">{user.name}</h1>
+              <p className="text-white/80 flex items-center gap-2 mb-3">
+                <Mail className="w-5 h-5" />
+                {user.email}
+              </p>
+              {user.isAdmin && (
+                <span className="inline-block px-4 py-2 bg-amber-500/20 border border-amber-500/50 rounded-full text-xs font-semibold">
+                  👑 Администратор
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </div>
+        )}
+        
+        {success && (
+          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+            ✓ {success}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 space-y-2">
+              <button className="w-full text-left px-4 py-3 rounded-lg bg-[#1B4B43]/10 text-[#1B4B43] font-semibold transition-colors">
+                📋 Мой профиль
+              </button>
+              <button className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                📦 Мои заказы
+              </button>
+              <button className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                ❤️ Избранное
+              </button>
+              
+              <hr className="my-4" />
+              
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors font-semibold"
+              >
+                <LogOut className="w-5 h-5" />
+                Выход
+              </button>
             </div>
           </div>
 
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Sidebar */}
-              <div className="md:col-span-1 border-r border-gray-100 pr-8">
-                <nav className="space-y-1">
-                  <button className="w-full text-left px-4 py-3 rounded-lg bg-gray-50 text-[#1B4B43] font-medium">
-                    Мой профиль
-                  </button>
-                  <button className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-                    Мои заказы
-                  </button>
-                  <button className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-                    Избранное
-                  </button>
-                  <button className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-                    Адреса доставки
-                  </button>
-                  {user.isAdmin && (
-                    <Link to="/admin" className="block w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-                      Управление магазином
-                    </Link>
-                  )}
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition"
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Profile Information */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Данные профиля</h2>
+                {!isEditing && (
+                  <button
+                    onClick={() => isSetEditing(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#1B4B43]/10 text-[#1B4B43] rounded-lg hover:bg-[#1B4B43]/20 transition-colors font-semibold"
                   >
-                    Выйти
+                    <Edit2 className="w-4 h-4" />
+                    Редактировать
                   </button>
-                </nav>
+                )}
               </div>
 
-              {/* Main Content */}
-              <div className="md:col-span-2">
-                <h3 className="text-xl font-bold mb-6">Данные аккаунта</h3>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+              {isEditing ? (
+                <form onSubmit={handleEditSubmit} className="space-y-6">
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Имя</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Телефон</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="+375296894693"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Адрес доставки</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <textarea
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        placeholder="Введите адрес доставки"
+                        rows={3}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#1B4B43] text-white rounded-lg hover:bg-[#2a6b5f] transition-colors font-semibold disabled:opacity-50"
+                    >
+                      <Save className="w-5 h-5" />
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => isSetEditing(false)}
+                      className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                    >
+                      <X className="w-5 h-5" />
+                      Отмена
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Имя</label>
-                      <p className="text-gray-900 font-medium">{user.name}</p>
+                      <p className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-2">Имя</p>
+                      <p className="text-lg text-gray-900 font-semibold">{user.name}</p>
                     </div>
                     <div>
-                      <label className="block text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Email</label>
-                      <p className="text-gray-900 font-medium">{user.email}</p>
+                      <p className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-2">Email</p>
+                      <p className="text-lg text-gray-900 font-semibold">{user.email}</p>
                     </div>
                   </div>
                   
-                  <div className="pt-6 border-t border-gray-100">
-                    <h4 className="font-bold mb-4">История заказов</h4>
-                    <div className="bg-gray-50 rounded-xl p-8 text-center text-gray-400">
-                      <p>У вас пока нет заказов</p>
-                      <Link to="/" className="mt-4 inline-block text-[#1B4B43] font-medium hover:underline">
-                        Перейти к покупкам
-                      </Link>
+                  {user.phone && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-2">Телефон</p>
+                      <p className="text-gray-900 flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        {user.phone}
+                      </p>
+                    </div>
+                  )}
+
+                  {user.address && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-2">Адрес</p>
+                      <p className="text-gray-900 flex items-start gap-2">
+                        <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
+                        {user.address}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Change Password */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Безопасность</h2>
+                {!isChangingPassword && (
+                  <button
+                    onClick={() => setIsChangingPassword(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-semibold"
+                  >
+                    <Lock className="w-4 h-4" />
+                    Изменить пароль
+                  </button>
+                )}
+              </div>
+
+              {isChangingPassword ? (
+                <form onSubmit={handlePasswordChange} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Новый пароль</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        placeholder="Введите новый пароль"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                      />
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Подтвердите пароль</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        placeholder="Повторите пароль"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-lg text-sm">
+                    Пароль должен содержать минимум 6 символов, прописные и строчные буквы, цифры
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50"
+                    >
+                      Изменить пароль
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsChangingPassword(false)}
+                      className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                    >
+                      <X className="w-5 h-5" />
+                      Отмена
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg">
+                  <p className="text-gray-600 mb-4">Ваш пароль защищен и хранится в безопасности.</p>
+                  <p className="text-xs text-gray-500">
+                    Последнее изменение пароля: недавно
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

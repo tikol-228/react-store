@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -8,6 +8,7 @@ import { Mail, Phone, MapPin, Lock, User, LogOut, Edit2, Save, X, AlertCircle } 
 const Profile: React.FC = () => {
   const { user, logout, updateUserProfile, updateUserPassword } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Edit mode states
   const [isEditing, isSetEditing] = useState(false);
@@ -158,15 +159,36 @@ const Profile: React.FC = () => {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-100 space-y-1 sm:space-y-2">
-              <button className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-[#1B4B43]/10 text-[#1B4B43] font-semibold text-xs sm:text-base transition-colors">
+              <Link
+                to="/profile"
+                className={`block w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-base transition-colors ${
+                  location.pathname === '/profile'
+                    ? 'bg-[#1B4B43]/10 text-[#1B4B43]'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
                 📋 Мой профиль
-              </button>
-              <button className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-gray-600 hover:bg-gray-50 text-xs sm:text-base transition-colors">
+              </Link>
+              <Link
+                to="/orders"
+                className={`block w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-base transition-colors ${
+                  location.pathname === '/orders'
+                    ? 'bg-[#1B4B43]/10 text-[#1B4B43]'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
                 📦 Мои заказы
-              </button>
-              <button className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-gray-600 hover:bg-gray-50 text-xs sm:text-base transition-colors">
+              </Link>
+              <Link
+                to="/favorites"
+                className={`block w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-base transition-colors ${
+                  location.pathname === '/favorites'
+                    ? 'bg-[#1B4B43]/10 text-[#1B4B43]'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
                 ❤️ Избранное
-              </button>
+              </Link>
               
               <hr className="my-2 sm:my-4" />
               

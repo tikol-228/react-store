@@ -14,7 +14,7 @@ const Home = () => {
       <Header />
       
       {/* Featured Categories */}
-      <section className="py-12 sm:py-20">
+      <section id="categories" className="py-12 sm:py-20">
         <div className="max-w-7xl mx-auto px-3 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-0 mb-8 sm:mb-12">
             <div className="space-y-1 sm:space-y-2">
@@ -45,7 +45,7 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 sm:py-20 bg-white">
+      <section id="features" className="py-12 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12">
           <SubFooter
             icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={plane} alt="самолёт" className="w-8 h-8" /></div>}

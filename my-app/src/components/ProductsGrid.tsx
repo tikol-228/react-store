@@ -81,7 +81,7 @@ const ProductsGrid: React.FC = () => {
   const hasActiveFilters = searchQuery || selectedCategory || priceRange[0] > 0 || priceRange[1] < maxPrice;
 
   return (
-    <section className="w-full bg-white py-12 sm:py-24">
+    <section id="products" className="w-full bg-white py-12 sm:py-24">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         {/* Header */}
         <div className="mb-8 sm:mb-12">

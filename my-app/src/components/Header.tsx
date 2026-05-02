@@ -10,16 +10,17 @@ const menu = [
   { name: "Главная", path: "/" },
   {
     name: "Бренды",
+    path: "/#categories",
     children: [
-      { name: "DIBI Milano" },
-      { name: "Germaine de Capuccini" },
+      { name: "DIBI Milano", path: "/#products" },
+      { name: "Germaine de Capuccini", path: "/#products" },
     ],
   },
-  { name: "Профессиональный уход" },
-  { name: "Домашний уход" },
-  { name: "Оплата" },
-  { name: "Доставка" },
-  { name: "Возврат товара" },
+  { name: "Профессиональный уход", path: "/#products" },
+  { name: "Домашний уход", path: "/#products" },
+  { name: "Оплата", path: "/#features" },
+  { name: "Доставка", path: "/#features" },
+  { name: "Возврат товара", path: "/#features" },
   { name: "Контакты", path: "/contacts" },
 ];
 
@@ -190,7 +191,7 @@ const Header: React.FC = () => {
           {menu.map((item) => (
             <div key={item.name} className="relative group whitespace-nowrap">
               <Link
-                to={item.path || "#"}
+                to={item.path || "/"}
                 className="flex items-center gap-1 hover:text-[#1B4B43] transition-colors font-medium text-[12px] lg:text-[13px] uppercase tracking-wider py-1"
               >
                 {item.name}
@@ -201,13 +202,13 @@ const Header: React.FC = () => {
                 <div className="absolute left-0 top-full pt-4 w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="bg-white shadow-xl rounded-xl border border-gray-100 py-2 flex flex-col overflow-hidden">
                     {item.children.map((child) => (
-                      <a
+                      <Link
                         key={child.name}
-                        href="#"
+                        to={child.path || "/"}
                         className="px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
                       >
                         {child.name}
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -238,20 +239,21 @@ const Header: React.FC = () => {
                     {openSubmenu === item.name && (
                       <div className="bg-gray-50 ml-4 border-l-2 border-[#1B4B43]">
                         {item.children.map((child) => (
-                          <a
+                          <Link
                             key={child.name}
-                            href="#"
+                            to={child.path || "/"}
+                            onClick={() => setMobileMenuOpen(false)}
                             className="block px-4 py-2.5 text-sm text-gray-600 hover:text-[#1B4B43] transition-colors"
                           >
                             {child.name}
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     )}
                   </>
                 ) : (
                   <Link
-                    to={item.path || "#"}
+                    to={item.path || "/"}
                     onClick={() => setMobileMenuOpen(false)}
                     className="block px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm"
                   >

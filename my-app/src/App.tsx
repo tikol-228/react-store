@@ -12,6 +12,7 @@ import Contacts from './pages/Contacts'
 import ForgotPassword from './pages/ForgotPassword'
 import Orders from './pages/Orders'
 import Favorites from './pages/Favorites'
+import ProductDetails from './pages/ProductDetails'
 import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
 import { FavoritesProvider } from './contexts/FavoritesContext'
@@ -29,6 +30,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/contacts" element={<Contacts />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
 
             {/* Защищённые маршруты (для авторизованных пользователей) */}
             <Route

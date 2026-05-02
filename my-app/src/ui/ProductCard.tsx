@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useFavorites } from "../contexts/FavoritesContext";
 import { ShoppingBag, Heart } from "lucide-react";
@@ -70,18 +71,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
             className={isFavorite(id) ? "fill-current text-[#B33A3A]" : ""}
           />
         </button>
-        
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
-        />
+
+        <Link to={`/product/${id}`} className="block h-full">
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+          />
+        </Link>
 
         {/* Quick Add Button */}
         <button
           type="button"
           onClick={handleAddToCart}
-          className="absolute bottom-4 left-4 right-4 bg-white text-[#1A1A1A] py-3 rounded-xl shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 font-bold text-sm hover:bg-[#1B4B43] hover:text-white"
+          className="absolute bottom-4 left-4 right-4 z-10 bg-white text-[#1A1A1A] py-3 rounded-xl shadow-xl opacity-100 translate-y-0 md:opacity-0 md:translate-y-4 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 font-bold text-sm hover:bg-[#1B4B43] hover:text-white"
         >
           <ShoppingBag size={16} />
           В корзину
@@ -89,7 +92,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* content */}
-      <div className="flex flex-col gap-1 px-1">
+      <Link to={`/product/${id}`} className="flex flex-col gap-1 px-1">
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-[#A0A0A0] uppercase tracking-wider font-medium">
             {category}
@@ -112,7 +115,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </span>
           )}
         </div>
-      </div>
+      </Link>
     </div>
   );
 };

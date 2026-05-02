@@ -2,8 +2,33 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Правила для коллекции пользователей
+    match /users/{userId} {
+      // Пользователи могут читать и писать только свои собственные документы
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Администраторы могут читать все документы пользователей
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Правила для заказов
+    match /orders/{orderId} {
+      // Пользователи могут читать и писать только свои заказы
+      allow read, write: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      // Администраторы могут читать все заказы
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Разрешить чтение для всех аутентифицированных пользователей (для продуктов и т.д.)
     match /{document=**} {
-      allow read, write: if false;
+      allow read: if request.auth != null;
+      allow write: if false; // Запись только через определенные правила выше
     }
   }
 }

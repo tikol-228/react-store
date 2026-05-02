@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { Users, Shield, Trash2, Edit2, Mail, Phone, MapPin, Calendar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import type { User } from '../contexts/AuthContext';
@@ -23,18 +21,11 @@ const UserManagement: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef);
-      const snapshot = await getDocs(q);
-      
-      const usersList: User[] = [];
-      snapshot.forEach((doc) => {
-        usersList.push({
-          id: doc.id,
-          ...doc.data() as Omit<User, 'id'>,
-        });
-      });
-      
+
+      // Получаем пользователей из localStorage
+      const savedUsers = localStorage.getItem('users');
+      const usersList: User[] = savedUsers ? JSON.parse(savedUsers) : [];
+
       setUsers(usersList.sort((a, b) => {
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
@@ -58,9 +49,15 @@ const UserManagement: React.FC = () => {
     if (!selectedUser) return;
 
     try {
-      const userDocRef = doc(db, 'users', selectedUser.id);
-      await updateDoc(userDocRef, editFormData);
-      
+      // Обновляем в localStorage
+      const savedUsers = localStorage.getItem('users');
+      const usersList: User[] = savedUsers ? JSON.parse(savedUsers) : [];
+      const userIndex = usersList.findIndex(u => u.id === selectedUser.id);
+      if (userIndex !== -1) {
+        usersList[userIndex] = { ...usersList[userIndex], ...editFormData };
+        localStorage.setItem('users', JSON.stringify(usersList));
+      }
+
       // Обновляем локальный список
       setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...editFormData } : u));
       setIsEditModalOpen(false);
@@ -73,12 +70,16 @@ const UserManagement: React.FC = () => {
 
   const handleToggleAdmin = async (user: User) => {
     try {
-      const userDocRef = doc(db, 'users', user.id);
-      await updateDoc(userDocRef, {
-        isAdmin: !user.isAdmin,
-      });
-      
-      setUsers(users.map(u => 
+      // Обновляем в localStorage
+      const savedUsers = localStorage.getItem('users');
+      const usersList: User[] = savedUsers ? JSON.parse(savedUsers) : [];
+      const userIndex = usersList.findIndex(u => u.id === user.id);
+      if (userIndex !== -1) {
+        usersList[userIndex].isAdmin = !usersList[userIndex].isAdmin;
+        localStorage.setItem('users', JSON.stringify(usersList));
+      }
+
+      setUsers(users.map(u =>
         u.id === user.id ? { ...u, isAdmin: !u.isAdmin } : u
       ));
     } catch (err) {
@@ -91,10 +92,12 @@ const UserManagement: React.FC = () => {
     if (!window.confirm('Вы уверены, что хотите удалить этого пользователя?')) return;
 
     try {
-      // Удаляем из Firestore
-      const userDocRef = doc(db, 'users', userId);
-      await deleteDoc(userDocRef);
-      
+      // Удаляем из localStorage
+      const savedUsers = localStorage.getItem('users');
+      const usersList: User[] = savedUsers ? JSON.parse(savedUsers) : [];
+      const updatedUsers = usersList.filter(u => u.id !== userId);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+
       // Удаляем из локального списка
       setUsers(users.filter(u => u.id !== userId));
     } catch (err) {

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Search, Sun, ShoppingBag, User, ChevronDown, Menu, X } from "lucide-react";
+import { Search, Sun, ShoppingBag, User, ChevronDown, Menu, X, Heart, Package, LogOut, Settings } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useFavorites } from '../contexts/FavoritesContext';
 import logo from '../icons/logo.jpeg'
 
 const menu = [
@@ -23,10 +24,12 @@ const menu = [
 ];
 
 const Header: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { totalItems } = useCart();
+  const { favorites } = useFavorites();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -76,6 +79,15 @@ const Header: React.FC = () => {
             <Sun size={20} className="text-gray-500" />
           </button>
           
+          <Link to="/favorites" className="p-2 hover:bg-gray-50 rounded-full transition-colors relative group">
+            <Heart size={20} className="text-gray-500 group-hover:text-red-500" />
+            {favorites.length > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+                {favorites.length > 9 ? '9+' : favorites.length}
+              </span>
+            )}
+          </Link>
+          
           <Link to="/cart" className="p-2 hover:bg-gray-50 rounded-full transition-colors relative group">
             <ShoppingBag size={20} className="text-gray-500 group-hover:text-[#1B4B43]" />
             {totalItems > 0 && (
@@ -85,20 +97,75 @@ const Header: React.FC = () => {
             )}
           </Link>
           
-          <Link 
-            to={user ? "/profile" : "/login"} 
-            className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-full transition-colors group"
-          >
-            <div className="relative">
-              <User size={20} className={user ? "text-[#1B4B43]" : "text-gray-500"} />
-              {user && <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border-2 border-white rounded-full"></span>}
-            </div>
-            {user && (
-              <span className="text-sm font-medium text-gray-700 hidden lg:block group-hover:text-[#1B4B43]">
-                {user.name.split(' ')[0]}
-              </span>
+          <div className="relative">
+            <button 
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-full transition-colors group"
+            >
+              <div className="relative">
+                <User size={20} className={user ? "text-[#1B4B43]" : "text-gray-500"} />
+                {user && <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border-2 border-white rounded-full"></span>}
+              </div>
+              {user && (
+                <span className="text-sm font-medium text-gray-700 hidden lg:block group-hover:text-[#1B4B43]">
+                  {user.name.split(' ')[0]}
+                </span>
+              )}
+              <ChevronDown size={14} className={`text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* User Dropdown Menu */}
+            {userMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="font-bold text-[#1A1A1A]">{user?.name}</p>
+                  <p className="text-sm text-gray-500">{user?.email}</p>
+                </div>
+                
+                <div className="py-1">
+                  <Link
+                    to="/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
+                  >
+                    <Settings size={16} />
+                    Профиль
+                  </Link>
+                  
+                  <Link
+                    to="/orders"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
+                  >
+                    <Package size={16} />
+                    Мои заказы
+                  </Link>
+                  
+                  <Link
+                    to="/favorites"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
+                  >
+                    <Heart size={16} />
+                    Избранное ({favorites.length})
+                  </Link>
+                </div>
+                
+                <div className="border-t border-gray-100 pt-1">
+                  <button
+                    onClick={() => {
+                      logout();
+                      setUserMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
+                  >
+                    <LogOut size={16} />
+                    Выйти
+                  </button>
+                </div>
+              </div>
             )}
-          </Link>
+          </div>
         </div>
       </div>
 

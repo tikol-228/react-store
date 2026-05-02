@@ -1,6 +1,7 @@
 import React from "react";
 import { useCart } from "../contexts/CartContext";
-import { ShoppingBag } from "lucide-react";
+import { useFavorites } from "../contexts/FavoritesContext";
+import { ShoppingBag, Heart } from "lucide-react";
 
 type ProductCardProps = {
   id: string;
@@ -24,11 +25,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
   badge,
 }) => {
   const { addToCart } = useCart();
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart({ id, title, price, image, oldPrice, category, rating, badge });
+  };
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFavorite(id)) {
+      removeFromFavorites(id);
+    } else {
+      addToFavorites({ id, title, price, image, oldPrice, category, rating, badge });
+    }
   };
 
   return (
@@ -46,6 +58,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </span>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleToggleFavorite}
+          className="absolute top-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#1A1A1A] shadow-md transition-all hover:scale-105 hover:text-[#B33A3A]"
+          aria-label={isFavorite(id) ? "Убрать из избранного" : "Добавить в избранное"}
+        >
+          <Heart
+            size={18}
+            className={isFavorite(id) ? "fill-current text-[#B33A3A]" : ""}
+          />
+        </button>
         
         <img
           src={image}
@@ -54,7 +78,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
         />
 
         {/* Quick Add Button */}
-        <button 
+        <button
+          type="button"
           onClick={handleAddToCart}
           className="absolute bottom-4 left-4 right-4 bg-white text-[#1A1A1A] py-3 rounded-xl shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 font-bold text-sm hover:bg-[#1B4B43] hover:text-white"
         >

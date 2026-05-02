@@ -81,41 +81,41 @@ const ProductsGrid: React.FC = () => {
   const hasActiveFilters = searchQuery || selectedCategory || priceRange[0] > 0 || priceRange[1] < maxPrice;
 
   return (
-    <section className="w-full bg-white py-24">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className="w-full bg-white py-12 sm:py-24">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6">
         {/* Header */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-8">
-            <div className="space-y-2">
+        <div className="mb-8 sm:mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 mb-6 sm:mb-8">
+            <div className="space-y-1 sm:space-y-2">
               <span className="text-[#D19D6B] font-bold text-xs uppercase tracking-widest">Наша коллекция</span>
-              <h2 className="text-[40px] font-medium text-[#1A1A1A]">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-medium text-[#1A1A1A]">
                 Все товары
               </h2>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Найдено товаров:</p>
-              <p className="text-3xl font-bold text-[#1B4B43]">{filteredProducts.length}</p>
+            <div className="text-left sm:text-right">
+              <p className="text-xs sm:text-sm text-gray-500">Найдено товаров:</p>
+              <p className="text-2xl sm:text-3xl font-bold text-[#1B4B43]">{filteredProducts.length}</p>
             </div>
           </div>
 
           {/* Search Bar */}
-          <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <div className="relative mb-4 sm:mb-6">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
             <input
               type="text"
-              placeholder="Поиск товаров..."
+              placeholder="Поиск..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent transition-all"
+              className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent transition-all"
             />
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="px-6 py-2.5 border border-gray-200 rounded-full text-sm font-bold text-[#1A1A1A] hover:bg-gray-50 transition-all flex items-center gap-2"
+                className="px-4 sm:px-6 py-2 sm:py-2.5 border border-gray-200 rounded-full text-xs sm:text-sm font-bold text-[#1A1A1A] hover:bg-gray-50 transition-all flex items-center gap-2"
               >
                 Фильтры
                 <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
@@ -124,20 +124,20 @@ const ProductsGrid: React.FC = () => {
               {hasActiveFilters && (
                 <button
                   onClick={resetFilters}
-                  className="px-4 py-2.5 text-sm font-bold text-[#1B4B43] hover:text-[#2a6b5f] flex items-center gap-2 transition-colors"
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-[#1B4B43] hover:text-[#2a6b5f] flex items-center gap-2 transition-colors"
                 >
-                  Очистить фильтры
+                  Очистить
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">Сортировка:</span>
+            <div className="flex items-center gap-2 sm:gap-4 text-sm sm:text-base">
+              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">Сортировка:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white border border-gray-200 rounded-full px-4 py-2.5 text-sm font-bold text-[#1A1A1A] outline-none cursor-pointer hover:border-gray-300 transition-all"
+                className="bg-white border border-gray-200 rounded-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-[#1A1A1A] outline-none cursor-pointer hover:border-gray-300 transition-all flex-1 sm:flex-none"
               >
                 <option value="newest">Сначала новые</option>
                 <option value="price-asc">Цена: по возрастанию</option>
@@ -150,8 +150,8 @@ const ProductsGrid: React.FC = () => {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 mb-12">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-8 sm:mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {/* Categories */}
               <div>
                 <h3 className="font-semibold text-[#1A1A1A] mb-4">Категории</h3>
@@ -236,31 +236,32 @@ const ProductsGrid: React.FC = () => {
 
         {/* Products Grid */}
         {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
             {filteredProducts.map((p) => (
               <ProductCard
                 key={p.id}
+                id={p.id}
                 title={p.title}
-                price={p.price}
-                image={p.image}
                 category={p.category}
+                price={p.price}
                 rating={p.rating}
-                badge={p.badge}
+                image={p.image}
                 oldPrice={p.oldPrice}
+                badge={p.badge}
               />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-24">
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24">
             <div className="text-center space-y-4">
-              <div className="text-5xl">🔍</div>
-              <h3 className="text-2xl font-bold text-[#1A1A1A]">Товары не найдены</h3>
-              <p className="text-gray-600 max-w-md">
+              <div className="text-4xl sm:text-5xl">🔍</div>
+              <h3 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">Товары не найдены</h3>
+              <p className="text-sm sm:text-base text-gray-600 max-w-md px-4">
                 Попробуйте изменить параметры поиска или фильтры
               </p>
               <button
                 onClick={resetFilters}
-                className="mt-4 px-6 py-3 bg-[#1B4B43] text-white rounded-full font-bold hover:bg-[#2a6b5f] transition-all"
+                className="mt-4 px-6 py-3 bg-[#1B4B43] text-white rounded-full font-bold hover:bg-[#2a6b5f] transition-all text-sm sm:text-base"
               >
                 Очистить фильтры
               </button>

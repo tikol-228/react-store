@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
+import type { User as FirebaseUser } from 'firebase/auth';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -6,7 +7,6 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   onAuthStateChanged,
-  User as FirebaseUser,
   updateEmail,
   updatePassword,
 } from 'firebase/auth';

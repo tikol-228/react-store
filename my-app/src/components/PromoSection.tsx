@@ -16,7 +16,7 @@ export default function PromoSection() {
 
           {/* IMAGE PLACEHOLDER */}
           <div className="absolute right-6 bottom-6 text-sm text-gray-600">
-            <img src={}/>
+            {/* Image will be added here */}
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
@@ -6,7 +6,7 @@ import Footer from '../components/Footer';
 import { Mail, Phone, MapPin, Lock, User, LogOut, Edit2, Save, X, AlertCircle } from 'lucide-react';
 
 const Profile: React.FC = () => {
-  const { user, logout, updateUserProfile, updateUserPassword, isLoading } = useAuth();
+  const { user, logout, updateUserProfile, updateUserPassword } = useAuth();
   const navigate = useNavigate();
   
   // Edit mode states
@@ -118,21 +118,21 @@ const Profile: React.FC = () => {
     <div className="min-h-screen bg-[#FAF9F6]">
       <Header />
       
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-12">
         {/* Header с аватаром */}
-        <div className="bg-gradient-to-r from-[#1B4B43] to-[#2a6b5f] rounded-3xl px-8 py-12 text-white mb-8">
-          <div className="flex items-center gap-8">
-            <div className="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center text-5xl font-bold border-4 border-white/30 backdrop-blur">
+        <div className="bg-gradient-to-r from-[#1B4B43] to-[#2a6b5f] rounded-2xl sm:rounded-3xl px-4 sm:px-8 py-6 sm:py-12 text-white mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full flex items-center justify-center text-3xl sm:text-5xl font-bold border-4 border-white/30 backdrop-blur flex-shrink-0">
               {user.name.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <h1 className="text-4xl font-bold mb-2">{user.name}</h1>
-              <p className="text-white/80 flex items-center gap-2 mb-3">
-                <Mail className="w-5 h-5" />
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">{user.name}</h1>
+              <p className="text-xs sm:text-base text-white/80 flex items-center gap-2 mb-2 sm:mb-3 break-all">
+                <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                 {user.email}
               </p>
               {user.isAdmin && (
-                <span className="inline-block px-4 py-2 bg-amber-500/20 border border-amber-500/50 rounded-full text-xs font-semibold">
+                <span className="inline-block px-3 sm:px-4 py-1 sm:py-2 bg-amber-500/20 border border-amber-500/50 rounded-full text-[10px] sm:text-xs font-semibold">
                   👑 Администратор
                 </span>
               )}
@@ -142,54 +142,54 @@ const Profile: React.FC = () => {
 
         {/* Notifications */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <p>{error}</p>
+          <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-700 p-3 sm:p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
+            <p className="text-xs sm:text-sm">{error}</p>
           </div>
         )}
         
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+          <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 text-green-700 p-3 sm:p-4 rounded-lg text-xs sm:text-sm">
             ✓ {success}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 space-y-2">
-              <button className="w-full text-left px-4 py-3 rounded-lg bg-[#1B4B43]/10 text-[#1B4B43] font-semibold transition-colors">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-100 space-y-1 sm:space-y-2">
+              <button className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-[#1B4B43]/10 text-[#1B4B43] font-semibold text-xs sm:text-base transition-colors">
                 📋 Мой профиль
               </button>
-              <button className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-gray-600 hover:bg-gray-50 text-xs sm:text-base transition-colors">
                 📦 Мои заказы
               </button>
-              <button className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-gray-600 hover:bg-gray-50 text-xs sm:text-base transition-colors">
                 ❤️ Избранное
               </button>
               
-              <hr className="my-4" />
+              <hr className="my-2 sm:my-4" />
               
               <button 
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors font-semibold"
+                className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors font-semibold text-xs sm:text-base"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                 Выход
               </button>
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Profile Information */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Данные профиля</h2>
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-8 border border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Данные профиля</h2>
                 {!isEditing && (
                   <button
                     onClick={() => isSetEditing(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#1B4B43]/10 text-[#1B4B43] rounded-lg hover:bg-[#1B4B43]/20 transition-colors font-semibold"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[#1B4B43]/10 text-[#1B4B43] rounded-lg hover:bg-[#1B4B43]/20 transition-colors font-semibold text-xs sm:text-base w-fit"
                   >
                     <Edit2 className="w-4 h-4" />
                     Редактировать
@@ -198,53 +198,53 @@ const Profile: React.FC = () => {
               </div>
 
               {isEditing ? (
-                <form onSubmit={handleEditSubmit} className="space-y-6">
+                <form onSubmit={handleEditSubmit} className="space-y-4 sm:space-y-6">
                   {/* Name */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Имя</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Имя</label>
                     <div className="relative">
-                      <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <User className="absolute left-3 top-2.5 sm:top-3 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
                       />
                     </div>
                   </div>
 
                   {/* Phone */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Телефон</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Телефон</label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <Phone className="absolute left-3 top-2.5 sm:top-3 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         placeholder="+375296894693"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
                       />
                     </div>
                   </div>
 
                   {/* Address */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Адрес доставки</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Адрес доставки</label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <MapPin className="absolute left-3 top-3 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                       <textarea
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         placeholder="Введите адрес доставки"
                         rows={3}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
                       />
                     </div>
                   </div>
 
                   {/* Buttons */}
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-4">
                     <button
                       type="submit"
                       disabled={loading}

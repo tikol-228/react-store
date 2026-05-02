@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -9,7 +9,6 @@ const ForgotPassword: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const { resetPassword } = useAuth();
-  const navigate = useNavigate();
 
   const getErrorMessage = (errorCode: string) => {
     const errorMessages: { [key: string]: string } = {

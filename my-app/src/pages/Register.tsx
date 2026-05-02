@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
@@ -83,31 +83,31 @@ const Register: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FAF9F6] flex flex-col justify-center py-8 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <h2 className="text-4xl font-bold text-[#1A1A1A] mb-2">
+          <h2 className="text-2xl sm:text-4xl font-bold text-[#1A1A1A] mb-1 sm:mb-2">
             Создать аккаунт
           </h2>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Присоединяйтесь к нашей семье красоты
           </p>
         </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-lg border border-gray-100 sm:rounded-2xl sm:px-10">
+      <div className="mt-6 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-6 sm:py-8 px-4 sm:px-6 shadow-lg border border-gray-100 sm:rounded-2xl sm:px-10 rounded-xl">
           {success && (
-            <div className="mb-6 bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <p className="text-sm">Аккаунт успешно создан! Перенаправляем...</p>
+            <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 text-green-700 p-3 sm:p-4 rounded-lg flex items-center gap-3">
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <p className="text-xs sm:text-sm">Аккаунт успешно создан! Перенаправляем...</p>
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-3 sm:space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div className="bg-red-50 border border-red-200 text-red-700 p-3 sm:p-4 rounded-lg flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
                 <p className="text-sm">{error}</p>
               </div>
             )}

@@ -1,284 +1,496 @@
 import React, { useState, useEffect } from 'react';
-import { initialProducts } from '../data/products';
-import type { Product } from '../data/products';
+import { useAuth } from '../contexts/AuthContext';
+import { adminAPI, productsAPI, ordersAPI, usersAPI, categoriesAPI } from '../services/api';
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Plus, Trash2, CheckCircle, Clock, Users } from 'lucide-react';
-import UserManagement from '../pages/UserManagement';
+import { Package, ShoppingBag, Trash2, CheckCircle, Users, Loader, AlertCircle } from 'lucide-react';
+import { formatPrice } from '../utils/formatPrice';
+
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  image_url?: string;
+  category_id?: number;
+  stock_quantity: number;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+  category_name?: string;
+}
+
+interface Order {
+  id: number;
+  user_id?: number;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  shipping_address: string;
+  total_amount: number;
+  status: string;
+  comment?: string;
+  created_at: string;
+  updated_at: string;
+  items?: any[];
+}
+
+interface User {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DashboardStats {
+  totalOrders: number;
+  totalUsers: number;
+  totalProducts: number;
+  unreadContacts: number;
+  unreadNotifications: number;
+}
 
 const Panel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'users'>('products');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'users'>('dashboard');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [newProduct, setNewProduct] = useState<Partial<Product>>({
-    title: '',
-    price: 0,
-    category: '',
-    rating: 0,
-    badge: '',
-    image: '',
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+
+  const allowedCategoryNames = [
+    'Уход за лицом',
+    'Уход за телом',
+    'Сыворотки',
+    'Маски для лица',
+    'Лосьоны для тела',
+    'Скрабы для тела',
+  ];
+
+  const adminCategories = categories.filter((category) =>
+    allowedCategoryNames.includes(category.name)
+  );
+
+  const [adminNewOrder, setAdminNewOrder] = useState({
+    customer_name: '',
+    customer_email: '',
+    customer_phone: '',
+    shipping_address: '',
+    comment: '',
+    user_id: '',
+    product_id: '',
+    quantity: 1,
   });
 
+  // New product form
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    category_id: '',
+    stock_quantity: 0,
+    image_url: '',
+  });
+
+  const [productImagePreview, setProductImagePreview] = useState<string>('');
+
   useEffect(() => {
-    // Load products
-    const savedProducts = localStorage.getItem('products');
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    } else {
-      setProducts(initialProducts);
+    if (user?.role === 'admin') {
+      loadDashboardData();
     }
+  }, [user]);
 
-    // Load orders
-    const savedOrders = localStorage.getItem('orders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [statsRes, productsRes, ordersRes, usersRes, categoriesRes] = await Promise.all([
+        adminAPI.getDashboardStats(),
+        productsAPI.getProducts({ limit: 200 }),
+        ordersAPI.getOrders({ limit: 50 }),
+        usersAPI.getUsers(),
+        categoriesAPI.getCategories(),
+      ]);
+
+      setStats(statsRes.data.stats);
+      setProducts(productsRes.data.products || []);
+      setOrders(ordersRes.data.orders || []);
+      setUsers(usersRes.data.users || []);
+      setCategories(categoriesRes.data.categories || []);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setNewProduct({
-      ...newProduct,
-      [name]: name === 'price' || name === 'rating' ? parseFloat(value) : value,
-    });
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProductImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Ограничение на размер файла: 2МБ
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Размер файла не должен превышать 2МБ');
+        return;
+      }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewProduct({
-          ...newProduct,
-          image: reader.result as string,
-        });
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setProductImagePreview(base64);
+        setNewProduct({ ...newProduct, image_url: base64 });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleAddProduct = (e: React.FormEvent) => {
+  const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProduct.title || !newProduct.price || !newProduct.image) {
-      alert('Пожалуйста, заполните обязательные поля (Название, Цена, Фото)');
-      return;
+    try {
+      if (!newProduct.name || !newProduct.price || !newProduct.stock_quantity) {
+        alert('Заполните обязательные поля: Название, Цена, Количество');
+        return;
+      }
+
+      const categoryId =
+        newProduct.category_id === '' || newProduct.category_id === undefined
+          ? null
+          : parseInt(String(newProduct.category_id), 10);
+      await productsAPI.createProduct({
+        name: newProduct.name,
+        description: (newProduct.description || '').trim() || '—',
+        price: parseFloat(String(newProduct.price)),
+        stock_quantity: parseInt(String(newProduct.stock_quantity), 10),
+        image_url: newProduct.image_url || undefined,
+        category_id: categoryId,
+      });
+      alert('Товар успешно добавлен!');
+      setNewProduct({
+        name: '',
+        description: '',
+        price: 0,
+        category_id: '',
+        stock_quantity: 0,
+        image_url: '',
+      });
+      setProductImagePreview('');
+      const productsRes = await productsAPI.getProducts({ limit: 200 });
+      setProducts(productsRes.data.products || []);
+    } catch (error: any) {
+      console.error('Failed to create product:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Не удалось добавить товар';
+      alert(`Ошибка: ${errorMessage}`);
     }
-
-    const productToAdd: Product = {
-      id: Date.now().toString(),
-      title: newProduct.title!,
-      price: newProduct.price!,
-      image: newProduct.image!,
-      category: newProduct.category || 'Общее',
-      rating: newProduct.rating || 5.0,
-      badge: newProduct.badge,
-    };
-
-    const updatedProducts = [...products, productToAdd];
-    setProducts(updatedProducts);
-    localStorage.setItem('products', JSON.stringify(updatedProducts));
-    
-    setNewProduct({
-      title: '',
-      price: 0,
-      category: '',
-      rating: 0,
-      badge: '',
-      image: '',
-    });
   };
 
-  const handleDeleteProduct = (id: string) => {
-    if (window.confirm('Вы уверены, что хотите удалить этот товар?')) {
-      const updatedProducts = products.filter(p => p.id !== id);
-      setProducts(updatedProducts);
-      localStorage.setItem('products', JSON.stringify(updatedProducts));
+  const handleAdminOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const pid = parseInt(String(adminNewOrder.product_id), 10);
+      const qty = parseInt(String(adminNewOrder.quantity), 10);
+      const prod = products.find((p) => p.id === pid);
+      if (!prod) {
+        alert('Выберите товар из списка');
+        return;
+      }
+      await adminAPI.createOrder({
+        customer_name: adminNewOrder.customer_name,
+        customer_email: adminNewOrder.customer_email,
+        customer_phone: adminNewOrder.customer_phone,
+        shipping_address: adminNewOrder.shipping_address,
+        comment: adminNewOrder.comment || undefined,
+        user_id: adminNewOrder.user_id ? parseInt(String(adminNewOrder.user_id), 10) : undefined,
+        items: [{ product_id: pid, quantity: qty, price: prod.price }],
+      });
+      setAdminNewOrder({
+        customer_name: '',
+        customer_email: '',
+        customer_phone: '',
+        shipping_address: '',
+        comment: '',
+        user_id: '',
+        product_id: '',
+        quantity: 1,
+      });
+      const [ordersRes, statsRes] = await Promise.all([
+        ordersAPI.getOrders({ limit: 50 }),
+        adminAPI.getDashboardStats(),
+      ]);
+      setOrders(ordersRes.data.orders || []);
+      setStats(statsRes.data.stats);
+    } catch (error) {
+      console.error('Failed to create admin order:', error);
+      alert('Не удалось создать заказ');
     }
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
-    const updatedOrders = orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
+  const handleDeleteProduct = async (id: number) => {
+    if (confirm('Are you sure you want to delete this product?')) {
+      try {
+        await productsAPI.deleteProduct(id);
+        setProducts(products.filter(p => p.id !== id));
+      } catch (error) {
+        console.error('Failed to delete product:', error);
+      }
+    }
+  };
+
+  const handleUpdateOrderStatus = async (id: number, status: string) => {
+    try {
+      await ordersAPI.updateOrderStatus(id, status);
+      setOrders(orders.map(order =>
+        order.id === id ? { ...order, status } : order
+      ));
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    }
+  };
+
+  const handleDeleteOrder = async (id: number) => {
+    if (confirm('Are you sure you want to delete this order?')) {
+      try {
+        await ordersAPI.deleteOrder(id);
+        setOrders(orders.filter(o => o.id !== id));
+      } catch (error) {
+        console.error('Failed to delete order:', error);
+      }
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (confirm('Are you sure you want to delete this user?')) {
+      try {
+        await usersAPI.deleteUser(id);
+        setUsers(users.filter(u => u.id !== id));
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+      }
+    }
+  };
+
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600">You don't have permission to access this page.</p>
+        </div>
+      </div>
     );
-    setOrders(updatedOrders);
-    localStorage.setItem('orders', JSON.stringify(updatedOrders));
-  };
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader className="animate-spin" size={48} />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-[#1B4B43] text-white p-8 flex flex-col gap-8 fixed h-full">
-        <Link to="/" className="text-xl font-bold tracking-tight mb-4">Art Capital Admin</Link>
-        
-        <nav className="space-y-2">
-          <button 
-            onClick={() => setActiveTab('products')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'products' ? 'bg-white text-[#1B4B43] font-bold' : 'hover:bg-white/10'}`}
-          >
-            <Package size={20} />
-            <span>Товары</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('orders')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'orders' ? 'bg-white text-[#1B4B43] font-bold' : 'hover:bg-white/10'}`}
-          >
-            <ShoppingBag size={20} />
-            <span>Заказы</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('users')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-white text-[#1B4B43] font-bold' : 'hover:bg-white/10'}`}
-          >
-            <Users size={20} />
-            <span>Пользователи</span>
-          </button>
-        </nav>
-
-        <div className="mt-auto">
-          <Link to="/" className="text-sm text-white/60 hover:text-white transition-colors">Вернуться на сайт</Link>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
+            <Link
+              to="/"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Back to Store
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 ml-64 p-12">
-        <header className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-3xl font-bold text-[#1A1A1A]">
-              {activeTab === 'products' ? 'Управление товарами' : activeTab === 'orders' ? 'Список заказов' : 'Управление пользователями'}
-            </h1>
-            <p className="text-gray-400">Добро пожаловать в панель управления салоном</p>
-          </div>
-          {activeTab === 'products' && (
-            <div className="flex items-center gap-4 text-sm font-bold text-gray-400">
-              Всего товаров: <span className="text-[#1B4B43]">{products.length}</span>
-            </div>
-          )}
-        </header>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Navigation Tabs */}
+        <div className="flex space-x-1 mb-8 bg-white p-1 rounded-lg shadow-sm">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: Package },
+            { id: 'products', label: 'Products', icon: ShoppingBag },
+            { id: 'orders', label: 'Orders', icon: CheckCircle },
+            { id: 'users', label: 'Users', icon: Users },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <tab.icon size={20} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        {activeTab === 'products' ? (
-          <div className="space-y-12">
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
+                </div>
+                <ShoppingBag className="h-8 w-8 text-blue-600" />
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Users</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
+                </div>
+                <Users className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Products</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.totalProducts}</p>
+                </div>
+                <Package className="h-8 w-8 text-purple-600" />
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Unread Messages</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.unreadContacts}</p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Products Tab */}
+        {activeTab === 'products' && (
+          <div className="space-y-6">
             {/* Add Product Form */}
-            <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <Plus size={20} className="text-[#1B4B43]" />
-                Добавить новый товар
-              </h2>
-              <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Название товара *</label>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
+              <form onSubmit={handleProductSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Product Name"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Price"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  step="0.01"
+                  required
+                />
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">Картинка товара</label>
                   <input
-                    type="text"
-                    name="title"
-                    value={newProduct.title}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-xl p-4 focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                    required
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProductImageChange}
+                    className="px-3 py-2 border border-gray-300 rounded-md"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Цена ($) *</label>
-                  <input
-                    type="number"
-                    name="price"
-                    step="0.01"
-                    value={newProduct.price}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-xl p-4 focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Категория</label>
-                  <input
-                    type="text"
-                    name="category"
-                    value={newProduct.category}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-xl p-4 focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Рейтинг (0-5)</label>
-                  <input
-                    type="number"
-                    name="rating"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    value={newProduct.rating}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-xl p-4 focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Бейдж (Новинка, Хит)</label>
-                  <input
-                    type="text"
-                    name="badge"
-                    value={newProduct.badge}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-xl p-4 focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Фото товара *</label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="flex-1 text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#1B4B43] file:text-white hover:file:bg-[#2a6b5f] transition-all"
-                      required
+                  {productImagePreview && (
+                    <img 
+                      src={productImagePreview} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded-md border border-gray-200"
                     />
-                    {newProduct.image && (
-                      <div className="h-14 w-14 bg-[#F6F6F6] rounded-xl overflow-hidden">
-                        <img src={newProduct.image} alt="Preview" className="h-full w-full object-contain" />
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-                <div className="md:col-span-3">
-                  <button
-                    type="submit"
-                    className="w-full bg-[#1A1A1A] text-white py-4 px-4 rounded-xl hover:bg-black transition duration-300 font-bold shadow-lg"
-                  >
-                    Добавить товар в каталог
-                  </button>
-                </div>
+                <input
+                  type="number"
+                  placeholder="Stock Quantity"
+                  value={newProduct.stock_quantity}
+                  onChange={(e) => setNewProduct({ ...newProduct, stock_quantity: parseInt(e.target.value) })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <select
+                  value={newProduct.category_id}
+                  onChange={(e) => setNewProduct({ ...newProduct, category_id: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Выберите категорию</option>
+                  {(adminCategories.length > 0 ? adminCategories : categories).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  placeholder="Description"
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md md:col-span-2"
+                  rows={3}
+                />
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 md:col-span-2"
+                >
+                  Add Product
+                </button>
               </form>
             </div>
 
-            {/* Product List */}
-            <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-              <h2 className="text-xl font-bold mb-6">Каталог товаров</h2>
+            {/* Products List */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-xl font-semibold">Products ({products.length})</h2>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
-                    <tr className="text-left border-b border-gray-100">
-                      <th className="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Товар</th>
-                      <th className="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Категория</th>
-                      <th className="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Цена</th>
-                      <th className="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Действия</th>
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="bg-white divide-y divide-gray-200">
                     {products.map((product) => (
-                      <tr key={product.id} className="group">
-                        <td className="py-4">
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 bg-[#F6F6F6] rounded-xl overflow-hidden p-1">
-                              <img src={product.image} alt={product.title} className="h-full w-full object-contain" />
+                      <tr key={product.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <img
+                              src={product.image_url || '/placeholder-product.jpg'}
+                              alt={product.name}
+                              className="w-10 h-10 rounded object-cover mr-3"
+                            />
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                              <div className="text-sm text-gray-500">{product.category_name}</div>
                             </div>
-                            <span className="font-bold text-sm text-[#1A1A1A] group-hover:text-[#1B4B43] transition-colors">{product.title}</span>
                           </div>
                         </td>
-                        <td className="py-4 text-sm text-gray-500">{product.category}</td>
-                        <td className="py-4 font-bold text-[#1A1A1A]">${product.price.toFixed(2)}</td>
-                        <td className="py-4 text-right">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatPrice(product.price)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {product.stock_quantity}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
                             onClick={() => handleDeleteProduct(product.id)}
-                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            className="text-red-600 hover:text-red-900"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={16} />
                           </button>
                         </td>
                       </tr>
@@ -288,80 +500,204 @@ const Panel: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : activeTab === 'users' ? (
-          <UserManagement />
-        ) : (
-          /* Orders Tab */
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-            <h2 className="text-xl font-bold mb-6">Активные заказы</h2>
-            {orders.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="w-16 h-16 bg-[#F3F4F0] rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                  <ShoppingBag size={30} />
-                </div>
-                <p className="text-gray-500">Заказов пока нет</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {orders.map((order) => (
-                  <div key={order.id} className="border border-gray-100 rounded-[24px] p-6 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="font-bold text-[#1A1A1A]">Заказ #{order.id}</span>
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            order.status === 'Новый' ? 'bg-blue-50 text-blue-500' : 
-                            order.status === 'Выполнен' ? 'bg-green-50 text-green-500' : 'bg-gray-50 text-gray-500'
-                          }`}>
-                            {order.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-400 font-medium">{order.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-xl text-[#1B4B43]">${order.total.toFixed(2)}</p>
-                        <div className="flex gap-2 mt-2">
-                          <button 
-                            onClick={() => updateOrderStatus(order.id, 'Выполнен')}
-                            className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all"
-                            title="Отметить как выполнен"
+        )}
+
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-xl font-semibold mb-4">Создать заказ (админ)</h2>
+              <form onSubmit={handleAdminOrderSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Имя клиента *"
+                  value={adminNewOrder.customer_name}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, customer_name: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email *"
+                  value={adminNewOrder.customer_email}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, customer_email: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Телефон *"
+                  value={adminNewOrder.customer_phone}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, customer_phone: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Адрес доставки *"
+                  value={adminNewOrder.shipping_address}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, shipping_address: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <select
+                  value={adminNewOrder.product_id}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, product_id: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                >
+                  <option value="">Выберите товар *</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({formatPrice(p.price)})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="Количество"
+                  value={adminNewOrder.quantity}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, quantity: parseInt(e.target.value, 10) || 1 })}
+                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <select
+                  value={adminNewOrder.user_id}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, user_id: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md md:col-span-2"
+                >
+                  <option value="">Привязать к аккаунту (необязательно)</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.first_name} {u.last_name} ({u.email})
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  placeholder="Комментарий"
+                  value={adminNewOrder.comment}
+                  onChange={(e) => setAdminNewOrder({ ...adminNewOrder, comment: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-md md:col-span-2"
+                  rows={2}
+                />
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 md:col-span-2"
+                >
+                  Создать заказ
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold">Orders ({orders.length})</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{order.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.customer_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatPrice(Number(order.total_amount))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleDeleteOrder(order.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold">Users ({users.length})</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {user.first_name} {user.last_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.role}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {user.role !== 'admin' && (
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="text-red-600 hover:text-red-900"
                           >
-                            <CheckCircle size={18} />
+                            <Trash2 size={16} />
                           </button>
-                          <button 
-                            onClick={() => updateOrderStatus(order.id, 'В обработке')}
-                            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
-                            title="В обработку"
-                          >
-                            <Clock size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-8 pt-4 border-t border-gray-50">
-                      <div>
-                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Клиент</h4>
-                        <p className="text-sm font-bold text-[#1A1A1A]">{order.customer.firstName} {order.customer.lastName}</p>
-                        <p className="text-xs text-gray-500">{order.customer.phone}</p>
-                        <p className="text-xs text-gray-500">{order.customer.address}, {order.customer.city}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Товары</h4>
-                        <div className="space-y-1">
-                          {order.items.map((item: any) => (
-                            <div key={item.id} className="text-xs flex justify-between">
-                              <span className="text-gray-600">{item.title} <span className="text-gray-300">x{item.quantity}</span></span>
-                              <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

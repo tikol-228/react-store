@@ -58,7 +58,11 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      await register(name, email, password);
+      const trimmed = name.trim();
+      const parts = trimmed.split(/\s+/);
+      const firstName = parts[0] || trimmed;
+      const lastName = parts.slice(1).join(' ') || firstName;
+      await register(firstName, lastName, email, password);
       setSuccess(true);
       setTimeout(() => {
         navigate('/profile');

@@ -1,169 +1,123 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { authAPI } from '../services/api';
 
 export interface User {
-  id: string;
-  name: string;
+  id: number;
   email: string;
+  first_name: string;
+  last_name: string;
   phone?: string;
-  address?: string;
-  avatar?: string;
-  isAdmin?: boolean;
-  createdAt?: Date;
+  role: 'user' | 'admin';
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  firebaseUser: any | null; // Mock for compatibility
   isLoading: boolean;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (firstName: string, lastName: string, email: string, password: string, phone?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (updates: { first_name?: string; last_name?: string; phone?: string }) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  updateUserProfile: (updates: Partial<User>) => Promise<void>;
-  updateUserPassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Загружаем пользователя из localStorage при инициализации
+  // Load user from localStorage on init
   useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+
+    if (token && savedUser) {
       setUser(JSON.parse(savedUser));
-      setFirebaseUser({ uid: JSON.parse(savedUser).id }); // Mock firebase user
     }
     setIsLoading(false);
   }, []);
 
-  // Регистрация (без Firebase)
-  const register = async (name: string, email: string, _password: string) => {
+  const register = async (firstName: string, lastName: string, email: string, password: string, phone?: string) => {
     try {
-      // Получаем существующих пользователей
-      const users: User[] = JSON.parse(localStorage.getItem('users') || '[]');
-
-      // Проверяем, существует ли пользователь с таким email
-      const existingUser = users.find(u => u.email === email);
-      if (existingUser) {
-        throw new Error('Пользователь с таким email уже существует');
-      }
-
-      // Создаем нового пользователя
-      const newUser: User = {
-        id: Date.now().toString(), // Простой ID
-        name,
+      const response = await authAPI.register({
         email,
-        isAdmin: users.length === 0, // Первый пользователь - админ
-        createdAt: new Date(),
-        phone: '',
-        address: '',
-        avatar: '',
-      };
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+      });
 
-      // Сохраняем пользователя
-      users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
+      const { user: userData, token } = response.data;
 
-      setUser(newUser);
-      setFirebaseUser({ uid: newUser.id });
-    } catch (error) {
-      throw error;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Registration failed');
     }
   };
 
-  // Логин (без Firebase)
-  const login = async (email: string, _password: string) => {
+  const login = async (email: string, password: string) => {
     try {
-      const users: User[] = JSON.parse(localStorage.getItem('users') || '[]');
+      const response = await authAPI.login({ email, password });
+      const { user: userData, token } = response.data;
 
-      const foundUser = users.find(u => u.email === email);
-      if (!foundUser) {
-        throw new Error('Пользователь не найден');
-      }
-
-      // В mock-режиме не проверяем пароль, просто логиним
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
-      setUser(foundUser);
-      setFirebaseUser({ uid: foundUser.id });
-    } catch (error) {
-      throw error;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Login failed');
     }
   };
 
-  // Выход
   const logout = async () => {
-    try {
-      localStorage.removeItem('currentUser');
-      setUser(null);
-      setFirebaseUser(null);
-    } catch (error) {
-      throw error;
-    }
+    sessionStorage.removeItem('react-store-admin-panel-unlocked');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
   };
 
-  // Восстановление пароля (mock)
-  const resetPassword = async (email: string) => {
-    // В mock-режиме просто ничего не делаем
-    console.log('Password reset requested for:', email);
-  };
-
-  // Обновление профиля
-  const updateUserProfile = async (updates: Partial<User>) => {
-    if (!user) throw new Error('Пользователь не авторизован');
-
+  const updateProfile = async (updates: { first_name?: string; last_name?: string; phone?: string }) => {
     try {
-      const updatedUser = { ...user, ...updates };
+      const payload = {
+        first_name: updates.first_name ?? user?.first_name ?? '',
+        last_name: updates.last_name ?? user?.last_name ?? '',
+        phone: updates.phone ?? user?.phone ?? '',
+      };
+      const response = await authAPI.updateProfile(payload);
+      const updatedUser = response.data.user;
 
-      // Обновляем в localStorage
-      const savedUsers = localStorage.getItem('users');
-      const users: User[] = savedUsers ? JSON.parse(savedUsers) : [];
-      const userIndex = users.findIndex(u => u.id === user.id);
-      if (userIndex !== -1) {
-        users[userIndex] = updatedUser;
-        localStorage.setItem('users', JSON.stringify(users));
-      }
-
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Update failed');
     }
   };
 
-  // Обновление пароля (mock)
-  const updateUserPassword = async (_newPassword: string) => {
-    // В mock-режиме просто ничего не делаем
-    console.log('Password updated');
+  const resetPassword = async (_email: string) => {
+    throw new Error('Сброс пароля через приложение пока не подключён. Используйте вход с текущим паролем или свяжитесь с поддержкой.');
   };
 
-  const value: AuthContextType = {
+  const value = {
     user,
-    firebaseUser,
     isLoading,
     register,
     login,
     logout,
+    updateProfile,
     resetPassword,
-    updateUserProfile,
-    updateUserPassword,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth должен быть использован внутри AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
+

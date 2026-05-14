@@ -26,7 +26,11 @@ const Footer: React.FC = () => {
             <li>Отслеживание заказа</li>
             <li>Центр помощи</li>
             <li>Частые вопросы</li>
-            <li><Link to="/admin" className="hover:text-black">Админ-панель</Link></li>
+            <li>
+              <Link to="/admin" className="hover:text-black">
+                Панель администратора
+              </Link>
+            </li>
           </ul>
         </div>
 

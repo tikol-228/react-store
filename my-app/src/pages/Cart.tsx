@@ -4,6 +4,7 @@ import { useCart } from '../contexts/CartContext';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { formatPrice } from '../utils/formatPrice';
 
 const Cart: React.FC = () => {
   const { cartItems, removeFromCart, updateQuantity, totalPrice } = useCart();
@@ -36,27 +37,29 @@ const Cart: React.FC = () => {
             {/* Items List */}
             <div className="lg:col-span-2 space-y-3 sm:space-y-4">
               {cartItems.map((item) => (
-                <div key={item.id} className="bg-white p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-3 sm:gap-6 items-start sm:items-center">
+                <div key={item.product_id} className="bg-white p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-3 sm:gap-6 items-start sm:items-center">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#F6F6F6] rounded-lg sm:rounded-xl overflow-hidden flex-shrink-0">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-contain" />
+                    <img src={item.image_url || '/placeholder-product.jpg'} alt={item.name} className="w-full h-full object-contain" />
                   </div>
                   
                   <div className="flex-grow flex-1 min-w-0">
-                    <span className="text-[8px] sm:text-[10px] text-[#A0A0A0] uppercase tracking-widest font-bold">{item.category}</span>
-                    <h3 className="text-sm sm:text-base font-bold text-[#1A1A1A] mb-1 line-clamp-2">{item.title}</h3>
-                    <p className="text-sm sm:text-base text-[#1B4B43] font-bold">${item.price.toFixed(2)}</p>
+                    <span className="text-[8px] sm:text-[10px] text-[#A0A0A0] uppercase tracking-widest font-bold">Товар</span>
+                    <h3 className="text-sm sm:text-base font-bold text-[#1A1A1A] mb-1 line-clamp-2">{item.name}</h3>
+                    <p className="text-sm sm:text-base text-[#1B4B43] font-bold">{formatPrice(item.price)}</p>
                   </div>
 
                   <div className="flex items-center gap-2 bg-[#F3F4F0] p-1 rounded-lg flex-shrink-0">
                     <button 
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      type="button"
+                      onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
                       className="p-1 hover:bg-white rounded-md transition-colors"
                     >
                       <Minus size={14} className="sm:w-4 sm:h-4" />
                     </button>
                     <span className="w-6 sm:w-8 text-center font-bold text-xs sm:text-sm">{item.quantity}</span>
                     <button 
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      type="button"
+                      onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                       className="p-1 hover:bg-white rounded-md transition-colors"
                     >
                       <Plus size={14} className="sm:w-4 sm:h-4" />
@@ -64,7 +67,8 @@ const Cart: React.FC = () => {
                   </div>
 
                   <button 
-                    onClick={() => removeFromCart(item.id)}
+                    type="button"
+                    onClick={() => removeFromCart(item.product_id)}
                     className="p-2 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                   >
                     <Trash2 size={18} className="sm:w-5 sm:h-5" />
@@ -81,7 +85,7 @@ const Cart: React.FC = () => {
                 <div className="space-y-2 sm:space-y-4 mb-6 sm:mb-8">
                   <div className="flex justify-between text-xs sm:text-sm text-gray-500">
                     <span>Товары ({cartItems.length})</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>{formatPrice(totalPrice)}</span>
                   </div>
                   <div className="flex justify-between text-xs sm:text-sm text-gray-500">
                     <span>Доставка</span>
@@ -89,7 +93,7 @@ const Cart: React.FC = () => {
                   </div>
                   <div className="pt-2 sm:pt-4 border-t border-gray-100 flex justify-between text-base sm:text-xl font-bold text-[#1A1A1A]">
                     <span>Всего</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>{formatPrice(totalPrice)}</span>
                   </div>
                 </div>
 

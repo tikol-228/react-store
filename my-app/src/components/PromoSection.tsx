@@ -29,7 +29,7 @@ export default function PromoSection() {
               <p className="text-sm text-gray-700">
                 Free Shipping on <br /> Orders Over
               </p>
-              <h3 className="text-2xl font-bold mt-1">$50</h3>
+              <h3 className="text-2xl font-bold mt-1">50 Br</h3>
             </div>
 
             {/* IMAGE PLACEHOLDER */}

@@ -41,14 +41,10 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/cart"
-              element={
-                <ProtectedRoute>
-                  <Cart />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/success" element={<Success />} />
+
             <Route
               path="/orders"
               element={
@@ -62,22 +58,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Favorites />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/success"
-              element={
-                <ProtectedRoute>
-                  <Success />
                 </ProtectedRoute>
               }
             />

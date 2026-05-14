@@ -3,6 +3,7 @@ import { useLocation, Link, Navigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { CheckCircle2, Download, Printer, Home } from 'lucide-react';
+import { formatPrice } from '../utils/formatPrice';
 
 const Success: React.FC = () => {
   const location = useLocation();
@@ -70,7 +71,7 @@ const Success: React.FC = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-[#1A1A1A]">${(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="text-sm font-bold text-[#1A1A1A]">{formatPrice(item.price * item.quantity)}</p>
                         <p className="text-[10px] text-gray-400 font-bold">x{item.quantity}</p>
                       </div>
                     </div>
@@ -81,7 +82,7 @@ const Success: React.FC = () => {
               <div className="pt-8 border-t border-gray-100 space-y-3">
                 <div className="flex justify-between text-gray-500">
                   <span>Сумма</span>
-                  <span className="font-bold text-[#1A1A1A]">${order.total.toFixed(2)}</span>
+                  <span className="font-bold text-[#1A1A1A]">{formatPrice(order.total)}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
                   <span>Доставка</span>
@@ -89,7 +90,7 @@ const Success: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-2xl font-bold text-[#1A1A1A] pt-4">
                   <span>Итого к оплате</span>
-                  <span className="text-[#1B4B43]">${order.total.toFixed(2)}</span>
+                  <span className="text-[#1B4B43]">{formatPrice(order.total)}</span>
                 </div>
               </div>
             </div>

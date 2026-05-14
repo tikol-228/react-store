@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { ordersAPI } from '../services/api';
 import { Package, Clock, CheckCircle, XCircle, Truck, MapPin, CreditCard } from 'lucide-react';
+import { formatPrice } from '../utils/formatPrice';
+
+interface OrderItem {
+  product_name: string;
+  image_url?: string;
+  quantity: number;
+  price: number;
+}
 
 interface Order {
-  id: string;
-  userId: string;
-  items: any[];
-  total: number;
+  id: number;
+  customer_name: string;
+  customer_email: string;
+  shipping_address: string;
+  total_amount: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  createdAt: string;
-  shippingAddress: string;
-  paymentMethod: string;
+  created_at: string;
+  items?: OrderItem[];
 }
 
 const Orders: React.FC = () => {
@@ -19,20 +29,26 @@ const Orders: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const loadOrders = async () => {
+      if (!user) {
+        setOrders([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await ordersAPI.getOrders({ limit: 50 });
+        setOrders(response.data.orders || []);
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     loadOrders();
   }, [user]);
-
-  const loadOrders = () => {
-    if (!user) return;
-
-    const savedOrders = localStorage.getItem('orders');
-    if (savedOrders) {
-      const allOrders: Order[] = JSON.parse(savedOrders);
-      const userOrders = allOrders.filter(order => order.userId === user.id);
-      setOrders(userOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    }
-    setIsLoading(false);
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -123,9 +139,9 @@ const Orders: React.FC = () => {
                         <Package size={20} className="text-[#1B4B43]" />
                       </div>
                       <div>
-                        <p className="font-bold text-[#1A1A1A]">Заказ #{order.id.slice(-8)}</p>
+                        <p className="font-bold text-[#1A1A1A]">Заказ #{order.id}</p>
                         <p className="text-sm text-gray-400">
-                          {new Date(order.createdAt).toLocaleDateString('ru-RU', {
+                          {new Date(order.created_at).toLocaleDateString('ru-RU', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
@@ -143,25 +159,25 @@ const Orders: React.FC = () => {
 
                   {/* Order Items */}
                   <div className="mb-4">
-                    <h3 className="font-bold text-gray-700 mb-2">Товары ({order.items.length})</h3>
+                    <h3 className="font-bold text-gray-700 mb-2">Товары ({order.items?.length ?? 0})</h3>
                     <div className="space-y-2">
-                      {order.items.slice(0, 3).map((item: any, index: number) => (
+                      {(order.items ?? []).slice(0, 3).map((item, index) => (
                         <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                           <img
-                            src={item.image}
-                            alt={item.title}
+                            src={item.image_url || '/placeholder-product.jpg'}
+                            alt={item.product_name}
                             className="w-12 h-12 object-cover rounded-lg"
                           />
                           <div className="flex-1">
-                            <p className="font-medium text-gray-900">{item.title}</p>
+                            <p className="font-medium text-gray-900">{item.product_name}</p>
                             <p className="text-sm text-gray-500">Кол-во: {item.quantity}</p>
                           </div>
-                          <p className="font-bold text-[#1B4B43]">{item.price * item.quantity} ₽</p>
+                          <p className="font-bold text-[#1B4B43]">{formatPrice(item.price * item.quantity)}</p>
                         </div>
                       ))}
-                      {order.items.length > 3 && (
+                      {((order.items ?? []).length > 3) && (
                         <p className="text-sm text-gray-500 text-center py-2">
-                          И еще {order.items.length - 3} товара(ов)
+                          И еще {(order.items ?? []).length - 3} товара(ов)
                         </p>
                       )}
                     </div>
@@ -172,16 +188,16 @@ const Orders: React.FC = () => {
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
                         <MapPin size={14} />
-                        {order.shippingAddress}
+                        {order.shipping_address}
                       </div>
                       <div className="flex items-center gap-1">
                         <CreditCard size={14} />
-                        {order.paymentMethod}
+                        {order.customer_email}
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Итого</p>
-                      <p className="text-xl font-bold text-[#1B4B43]">{order.total} ₽</p>
+                      <p className="text-xl font-bold text-[#1B4B43]">{formatPrice(order.total_amount)}</p>
                     </div>
                   </div>
                 </div>

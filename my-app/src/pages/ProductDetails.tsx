@@ -1,25 +1,54 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Heart, ShoppingBag, Star } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { initialProducts } from '../data/products';
-import type { Product } from '../data/products';
+import { productsAPI } from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { formatPrice } from '../utils/formatPrice';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCart();
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+  const [product, setProduct] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const product = useMemo(() => {
-    const savedProducts = localStorage.getItem('products');
-    const products: Product[] = savedProducts ? JSON.parse(savedProducts) : initialProducts;
-    return products.find((item) => item.id === id);
+  useEffect(() => {
+    const loadProduct = async () => {
+      if (!id) {
+        setError('Product not found');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await productsAPI.getProduct(parseInt(id, 10));
+        setProduct(response.data.product);
+      } catch (err) {
+        setError('Product not found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProduct();
   }, [id]);
 
-  if (!product) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#1B4B43]/20 border-t-[#1B4B43] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Загрузка товара...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return <Navigate to="/" replace />;
   }
 
@@ -31,7 +60,14 @@ const ProductDetails: React.FC = () => {
       return;
     }
 
-    addToFavorites(product);
+    addToFavorites({
+      id: product.id,
+      title: product.name,
+      category: product.category_name || 'Категория',
+      price: product.price,
+      rating: product.rating || 4.5,
+      image: product.image_url || '/placeholder-product.jpg',
+    });
   };
 
   return (
@@ -51,8 +87,8 @@ const ProductDetails: React.FC = () => {
           <div className="rounded-[28px] bg-[#F6F6F6] p-6">
             <div className="aspect-[4/5] overflow-hidden rounded-[24px]">
               <img
-                src={product.image}
-                alt={product.title}
+                src={product.image_url || '/placeholder-product.jpg'}
+                alt={product.name}
                 className="h-full w-full object-contain"
               />
             </div>
@@ -60,44 +96,39 @@ const ProductDetails: React.FC = () => {
 
           <div className="flex flex-col justify-center">
             <span className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-[#D19D6B]">
-              {product.category}
+              {product.category_name || 'Категория'}
             </span>
             <h1 className="mb-4 text-3xl font-bold text-[#1A1A1A] sm:text-4xl">
-              {product.title}
+              {product.name}
             </h1>
 
             <div className="mb-6 flex items-center gap-3">
               <div className="flex items-center gap-1 text-orange-400">
                 <Star size={18} className="fill-current" />
-                <span className="font-semibold text-[#1A1A1A]">{product.rating.toFixed(1)}</span>
+                <span className="font-semibold text-[#1A1A1A]">{product.rating ? product.rating.toFixed(1) : '4.5'}</span>
               </div>
-              {product.badge && (
-                <span className="rounded-full bg-[#1B4B43] px-3 py-1 text-xs font-bold text-white">
-                  {product.badge}
-                </span>
-              )}
             </div>
 
             <div className="mb-8 flex items-center gap-3">
               <span className="text-3xl font-bold text-[#1A1A1A]">
-                ${product.price.toFixed(2)}
+                {formatPrice(product.price)}
               </span>
-              {product.oldPrice && (
-                <span className="text-lg text-gray-400 line-through">
-                  ${product.oldPrice.toFixed(2)}
-                </span>
-              )}
             </div>
 
             <p className="mb-8 max-w-xl text-base leading-relaxed text-gray-600">
-              Профессионально подобранный товар для ухода и поддержания красоты. Добавьте его в
-              корзину или сохраните в избранное, чтобы вернуться позже.
+              {product.description || 'Описание товара временно отсутствует.'}
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={() => addToCart(product)}
+                onClick={async () => {
+                  try {
+                    await addToCart(product.id);
+                  } catch (err: any) {
+                    alert(err?.message || 'Не удалось добавить в корзину');
+                  }
+                }}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1B4B43] px-8 py-4 font-bold text-white transition-colors hover:bg-[#245c53]"
               >
                 <ShoppingBag size={18} />

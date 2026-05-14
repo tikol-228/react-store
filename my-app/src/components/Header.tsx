@@ -109,7 +109,7 @@ const Header: React.FC = () => {
               </div>
               {user && (
                 <span className="text-sm font-medium text-gray-700 hidden lg:block group-hover:text-[#1B4B43]">
-                  {user.name.split(' ')[0]}
+                  {user.first_name}
                 </span>
               )}
               <ChevronDown size={14} className={`text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -119,7 +119,9 @@ const Header: React.FC = () => {
             {userMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="font-bold text-[#1A1A1A]">{user?.name}</p>
+                  <p className="font-bold text-[#1A1A1A]">
+                    {user ? `${user.first_name} ${user.last_name}`.trim() : ''}
+                  </p>
                   <p className="text-sm text-gray-500">{user?.email}</p>
                 </div>
                 

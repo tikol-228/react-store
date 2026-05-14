@@ -26,11 +26,10 @@ const Home = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-8">
             {[
               { name: 'Уход за лицом', img: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=400', count: 24 },
               { name: 'Уход за телом', img: 'https://images.unsplash.com/photo-1552046122-03184de85e08?auto=format&fit=crop&q=80&w=400', count: 18 },
-              { name: 'Аксессуары', img: 'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?auto=format&fit=crop&q=80&w=400', count: 12 },
             ].map((cat) => (
               <div key={cat.name} className="group relative aspect-[4/5] rounded-2xl sm:rounded-[30px] overflow-hidden cursor-pointer">
                 <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -41,32 +40,6 @@ const Home = () => {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-12 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12">
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={plane} alt="самолёт" className="w-8 h-8" /></div>}
-            title="Бесплатная доставка"
-            desc="На все заказы от $50"
-          />
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={returnIcon} alt="возврат" className="w-8 h-8" /></div>}
-            title="30 дней на возврат"
-            desc="Гарантия возврата денег"
-          />
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={secure} alt="безопасность" className="w-8 h-8" /></div>}
-            title="Безопасная оплата"
-            desc="100% защищенный платеж"
-          />
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={support} alt="поддержка" className="w-8 h-8" /></div>}
-            title="Поддержка 24/7"
-            desc="Всегда на связи с вами"
-          />
         </div>
       </section>
 
@@ -155,6 +128,32 @@ const Home = () => {
       </section>
 
       <ProductsGrid />
+
+      {/* Features Section */}
+      <section id="features" className="py-12 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12">
+          <SubFooter
+            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={plane} alt="самолёт" className="w-8 h-8" /></div>}
+            title="Бесплатная доставка"
+            desc="На все заказы от 50 Br"
+          />
+          <SubFooter
+            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={returnIcon} alt="возврат" className="w-8 h-8" /></div>}
+            title="30 дней на возврат"
+            desc="Гарантия возврата денег"
+          />
+          <SubFooter
+            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={secure} alt="безопасность" className="w-8 h-8" /></div>}
+            title="Безопасная оплата"
+            desc="100% защищенный платеж"
+          />
+          <SubFooter
+            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={support} alt="поддержка" className="w-8 h-8" /></div>}
+            title="Поддержка 24/7"
+            desc="Всегда на связи с вами"
+          />
+        </div>
+      </section>
       <Footer />
     </div>
     </>

@@ -2,257 +2,314 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { ordersAPI } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { ArrowLeft, ShieldCheck, Truck, CreditCard } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Truck, CreditCard, Loader } from 'lucide-react';
+import { formatPrice } from '../utils/formatPrice';
 
 const Checkout: React.FC = () => {
-  const { cartItems, totalPrice, clearCart } = useCart();
+  const { cartItems, totalPrice, clearCart, refreshCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    firstName: user?.name?.split(' ')[0] || '',
-    lastName: user?.name?.split(' ')[1] || '',
+    firstName: user?.first_name || '',
+    lastName: user?.last_name || '',
     email: user?.email || '',
-    phone: '',
+    phone: user?.phone || '',
     address: '',
     city: '',
     postalCode: '',
-    paymentMethod: 'card'
+    paymentMethod: 'card',
+    comment: ''
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Create order object
-    const order = {
-      id: `ORD-${Date.now()}`,
-      date: new Date().toLocaleString('ru-RU'),
-      customer: {
-        ...formData,
-        userId: user?.id || 'guest'
-      },
-      items: cartItems,
-      total: totalPrice,
-      status: 'Новый'
-    };
 
-    // Save to localStorage (Admin panel orders)
-    const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-    localStorage.setItem('orders', JSON.stringify([...existingOrders, order]));
+    if (cartItems.length === 0) {
+      alert('Корзина пуста');
+      return;
+    }
 
-    // Clear cart and navigate to success
-    clearCart();
-    navigate('/success', { state: { order } });
+    setIsSubmitting(true);
+
+    try {
+      // Prepare order data
+      const orderData = {
+        customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        customer_email: formData.email,
+        customer_phone: formData.phone,
+        shipping_address: `${formData.address}, ${formData.city}, ${formData.postalCode}`,
+        comment: formData.comment,
+        items: cartItems.map(item => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      };
+
+      // Create order
+      await ordersAPI.createOrder(orderData);
+
+      // Clear cart
+      await clearCart();
+      await refreshCart();
+
+      // Navigate to success page
+      navigate('/success');
+    } catch (error: any) {
+      console.error('Failed to create order:', error);
+      alert(error.response?.data?.message || 'Failed to create order');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (cartItems.length === 0) {
-    navigate('/cart');
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-4xl mx-auto px-4 py-16">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Корзина пуста</h1>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            >
+              Вернуться к покупкам
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6]">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-12">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-[#1A1A1A] mb-6 sm:mb-8 transition-colors text-sm sm:text-base">
-          <ArrowLeft size={18} />
-          <span>Вернуться в корзину</span>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <button
+          onClick={() => navigate('/cart')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8"
+        >
+          <ArrowLeft size={20} />
+          Вернуться в корзину
         </button>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
-          {/* Checkout Form */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-8">
-            {/* Contact Info */}
-            <section className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100">
-              <h2 className="text-base sm:text-xl font-bold text-[#1A1A1A] mb-4 sm:mb-6 flex items-center gap-2">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#F3F4F0] rounded-full flex items-center justify-center text-[#1B4B43] text-xs sm:text-sm font-bold">1</div>
-                Контактная информация
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Order Form */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Оформление заказа</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Customer Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Имя</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Имя *
+                  </label>
                   <input
                     type="text"
                     name="firstName"
-                    required
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Фамилия</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Фамилия *
+                  </label>
                   <input
                     type="text"
                     name="lastName"
-                    required
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email</label>
-                  <input
-                    type="email"
-                    name="email"
                     required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Телефон</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    required
-                    placeholder="+7 (___) ___-__-__"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
-            </section>
 
-            {/* Shipping Info */}
-            <section className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100">
-              <h2 className="text-base sm:text-xl font-bold text-[#1A1A1A] mb-4 sm:mb-6 flex items-center gap-2">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#F3F4F0] rounded-full flex items-center justify-center text-[#1B4B43] text-xs sm:text-sm font-bold">2</div>
-                Адрес доставки
-              </h2>
-              <div className="space-y-3 sm:space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Телефон *
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Адрес доставки *
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  placeholder="Улица, дом, квартира"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Адрес (улица, дом, кв)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Город *
+                  </label>
                   <input
                     type="text"
-                    name="address"
-                    required
-                    value={formData.address}
+                    name="city"
+                    value={formData.city}
                     onChange={handleInputChange}
-                    className="w-full bg-[#FAF9F6] border-none rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Город</label>
-                    <input
-                      type="text"
-                      name="city"
-                      required
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      className="w-full bg-[#FAF9F6] border-none rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Почтовый индекс</label>
-                    <input
-                      type="text"
-                      name="postalCode"
-                      required
-                      value={formData.postalCode}
-                      onChange={handleInputChange}
-                      className="w-full bg-[#FAF9F6] border-none rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm focus:ring-2 focus:ring-[#1B4B43]/20 transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Почтовый индекс *
+                  </label>
+                  <input
+                    type="text"
+                    name="postalCode"
+                    value={formData.postalCode}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
               </div>
-            </section>
 
-            {/* Payment Method */}
-            <section className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100">
-              <h2 className="text-base sm:text-xl font-bold text-[#1A1A1A] mb-4 sm:mb-6 flex items-center gap-2">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#F3F4F0] rounded-full flex items-center justify-center text-[#1B4B43] text-xs sm:text-sm font-bold">3</div>
-                Способ оплаты
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <label className={`relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl border-2 cursor-pointer transition-all ${formData.paymentMethod === 'card' ? 'border-[#1B4B43] bg-[#F3F4F0]' : 'border-gray-100 bg-[#FAF9F6]'}`}>
-                  <input type="radio" name="paymentMethod" value="card" checked={formData.paymentMethod === 'card'} onChange={handleInputChange} className="hidden" />
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center text-[#1B4B43] flex-shrink-0">
-                    <CreditCard size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs sm:text-sm">Банковская карта</p>
-                    <p className="text-[9px] sm:text-[10px] text-gray-400 uppercase font-bold">Онлайн оплата</p>
-                  </div>
+              {/* Payment Method */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Способ оплаты
                 </label>
-                <label className={`relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-2xl border-2 cursor-pointer transition-all ${formData.paymentMethod === 'cash' ? 'border-[#1B4B43] bg-[#F3F4F0]' : 'border-gray-100 bg-[#FAF9F6]'}`}>
-                  <input type="radio" name="paymentMethod" value="cash" checked={formData.paymentMethod === 'cash'} onChange={handleInputChange} className="hidden" />
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center text-[#1B4B43] flex-shrink-0">
-                    <Truck size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-xs sm:text-sm">При получении</p>
-                    <p className="text-[9px] sm:text-[10px] text-gray-400 uppercase font-bold">Курьеру или ПВЗ</p>
-                  </div>
-                </label>
+                <select
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="card">Банковская карта</option>
+                  <option value="cash">Наличными при получении</option>
+                </select>
               </div>
-            </section>
+
+              {/* Comment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Комментарий к заказу
+                </label>
+                <textarea
+                  name="comment"
+                  value={formData.comment}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Дополнительные пожелания..."
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader className="animate-spin" size={20} />
+                    Оформление...
+                  </>
+                ) : (
+                  'Оформить заказ'
+                )}
+              </button>
+            </form>
           </div>
 
-          {/* Order Summary Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 sticky top-24 sm:top-32">
-              <h2 className="text-base sm:text-xl font-bold text-[#1A1A1A] mb-4 sm:mb-6">Ваш заказ</h2>
-              
-              <div className="space-y-2 sm:space-y-4 max-h-48 sm:max-h-60 overflow-y-auto mb-4 sm:mb-6 pr-2">
-                {cartItems.map(item => (
-                  <div key={item.id} className="flex gap-3 items-center">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#F6F6F6] rounded-lg overflow-hidden flex-shrink-0">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-contain" />
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <p className="text-xs sm:text-sm font-bold text-[#1A1A1A] truncate">{item.title}</p>
-                      <p className="text-[9px] sm:text-[10px] text-gray-400">x{item.quantity} — ${(item.price * item.quantity).toFixed(2)}</p>
-                    </div>
+          {/* Order Summary */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ваш заказ</h3>
+
+            <div className="space-y-4 mb-6">
+              {cartItems.map((item) => (
+                <div key={item.product_id} className="flex items-center gap-4">
+                  <img
+                    src={item.image_url || '/placeholder-product.jpg'}
+                    alt={item.name}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{item.name}</h4>
+                    <p className="text-sm text-gray-600">Количество: {item.quantity}</p>
                   </div>
-                ))}
+                  <span className="font-semibold text-gray-900">
+                    {formatPrice(item.price * item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center text-lg font-semibold">
+                <span>Итого:</span>
+                <span>{formatPrice(totalPrice)}</span>
               </div>
+            </div>
 
-              <div className="space-y-2 sm:space-y-4 mb-6 sm:mb-8 pt-4 sm:pt-6 border-t border-gray-100">
-                <div className="flex justify-between text-gray-500 text-xs sm:text-sm">
-                  <span>Сумма</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500 text-xs sm:text-sm">
-                  <span>Доставка</span>
-                  <span className="text-[#1B4B43]">Бесплатно</span>
-                </div>
-                <div className="pt-2 sm:pt-4 flex justify-between text-base sm:text-xl font-bold text-[#1A1A1A]">
-                  <span>Итого</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
+            {/* Trust Badges */}
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <ShieldCheck size={20} className="text-green-600" />
+                <span>Безопасная оплата</span>
               </div>
-
-              <button 
-                type="submit"
-                className="w-full py-3 sm:py-4 bg-[#1B4B43] text-white rounded-full font-bold text-sm sm:text-base hover:bg-[#2a6b5f] transition-all shadow-lg shadow-[#1B4B43]/20 mb-4 sm:mb-6"
-              >
-                Подтвердить заказ
-              </button>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-gray-400">
-                  <ShieldCheck size={16} className="sm:w-[18px] sm:h-[18px] text-[#1B4B43] flex-shrink-0" />
-                  <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider">Безопасность данных гарантирована</span>
-                </div>
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <Truck size={20} className="text-blue-600" />
+                <span>Быстрая доставка</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <CreditCard size={20} className="text-purple-600" />
+                <span>Гарантия возврата</span>
               </div>
             </div>
           </div>
-        </form>
-      </main>
-
+        </div>
+      </div>
       <Footer />
     </div>
   );

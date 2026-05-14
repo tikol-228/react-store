@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
-const Login: React.FC = () => {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPath =
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/profile';
 
   const getErrorMessage = (errorCode: string) => {
     const errorMessages: { [key: string]: string } = {
@@ -35,9 +38,10 @@ const Login: React.FC = () => {
       }
       
       await login(email, password);
-      navigate('/profile');
+      const target = fromPath && fromPath !== '/login' ? fromPath : '/profile';
+      navigate(target, { replace: true });
     } catch (err: any) {
-      setError(getErrorMessage(err.code || ''));
+      setError(err?.message || getErrorMessage(err.code || ''));
       console.error('Login error:', err);
     } finally {
       setLoading(false);

@@ -1,0 +1,15 @@
+{
+  "name": "react-store",
+  "version": "1.0.0",
+  "description": "Full-stack React e-commerce store",
+  "scripts": {
+    "install-all": "npm install && npm install --prefix server && npm install --prefix my-app",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
+    "start": "npm run seed --prefix server && concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
+    "install-server": "npm install --prefix server",
+    "install-client": "npm install --prefix my-app"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

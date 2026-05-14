@@ -4,8 +4,8 @@ import type { Product } from '../data/products';
 interface FavoritesContextType {
   favorites: Product[];
   addToFavorites: (product: Product) => void;
-  removeFromFavorites: (productId: string) => void;
-  isFavorite: (productId: string) => boolean;
+  removeFromFavorites: (productId: string | number) => void;
+  isFavorite: (productId: string | number) => boolean;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
@@ -25,20 +25,23 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [favorites]);
 
   const addToFavorites = (product: Product) => {
-    setFavorites(prev => {
-      if (prev.find(item => item.id === product.id)) {
-        return prev; // Уже в избранном
+    const normalized: Product = { ...product, id: String(product.id) };
+    setFavorites((prev) => {
+      if (prev.find((item) => String(item.id) === normalized.id)) {
+        return prev;
       }
-      return [...prev, product];
+      return [...prev, normalized];
     });
   };
 
-  const removeFromFavorites = (productId: string) => {
-    setFavorites(prev => prev.filter(item => item.id !== productId));
+  const removeFromFavorites = (productId: string | number) => {
+    const key = String(productId);
+    setFavorites((prev) => prev.filter((item) => String(item.id) !== key));
   };
 
-  const isFavorite = (productId: string) => {
-    return favorites.some(item => item.id === productId);
+  const isFavorite = (productId: string | number) => {
+    const key = String(productId);
+    return favorites.some((item) => String(item.id) === key);
   };
 
   const value: FavoritesContextType = {

@@ -1,0 +1,6 @@
+{"level":"info","message":"GET /api/health 200 - 3ms","service":"react-store-backend","timestamp":"2026-05-13T13:45:21.829Z"}
+{"level":"info","message":"GET /api/products 200 - 4ms","service":"react-store-backend","timestamp":"2026-05-13T13:45:25.148Z"}
+{"level":"info","message":"POST /api/auth/register 409 - 7ms","service":"react-store-backend","timestamp":"2026-05-13T13:45:30.749Z"}
+{"level":"info","message":"POST /api/auth/register 500 - 76ms","service":"react-store-backend","timestamp":"2026-05-13T13:45:35.599Z"}
+{"level":"info","message":"POST /api/auth/register 409 - 10ms","service":"react-store-backend","timestamp":"2026-05-13T13:46:00.914Z"}
+{"level":"info","message":"POST /api/auth/login 200 - 72ms","service":"react-store-backend","timestamp":"2026-05-13T13:46:06.392Z"}

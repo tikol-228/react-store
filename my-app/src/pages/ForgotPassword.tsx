@@ -36,7 +36,7 @@ const ForgotPassword: React.FC = () => {
       setSuccess(true);
       setEmail('');
     } catch (err: any) {
-      setError(getErrorMessage(err.code || ''));
+      setError(err?.message || getErrorMessage(err.code || ''));
       console.error('Password reset error:', err);
     } finally {
       setLoading(false);

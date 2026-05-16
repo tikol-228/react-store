@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Search, Sun, ShoppingBag, User, ChevronDown, Menu, X, Heart, Package, LogOut, Settings } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +9,7 @@ import logo from '../icons/logo.jpeg'
 const menu = [
   { name: "Главная", path: "/" },
   {
-    name: "Бренды",
+    name: "Категории",
     path: "/#categories",
     children: [
       { name: "DIBI Milano", path: "/#products" },
@@ -28,8 +28,10 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { totalItems } = useCart();
   const { favorites } = useFavorites();
+  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -41,8 +43,19 @@ const Header: React.FC = () => {
     setOpenSubmenu(openSubmenu === name ? null : name);
   };
 
+  const toggleDropdown = (name: string) => {
+    setOpenDropdown(openDropdown === name ? null : name);
+  };
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="w-full border-b border-gray-200 bg-white sticky top-0 z-50">
+    <header className={`w-full sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-gray-200 bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-white'}`}>
       {/* TOP */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 h-16 sm:h-20 flex items-center justify-between">
         {/* MOBILE MENU BUTTON */}
@@ -191,22 +204,33 @@ const Header: React.FC = () => {
       <nav className="w-full border-t border-gray-50 hidden md:block">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-center gap-6 lg:gap-8 text-gray-500 overflow-x-auto">
           {menu.map((item) => (
-            <div key={item.name} className="relative group whitespace-nowrap">
-              <Link
-                to={item.path || "/"}
-                className="flex items-center gap-1 hover:text-[#1B4B43] transition-colors font-medium text-[12px] lg:text-[13px] uppercase tracking-wider py-1"
-              >
-                {item.name}
-                {item.children && <ChevronDown size={14} />}
-              </Link>
+            <div key={item.name} className="relative whitespace-nowrap" onMouseLeave={() => setOpenDropdown(null)}>
+              {item.children ? (
+                <button
+                  type="button"
+                  onClick={() => toggleDropdown(item.name)}
+                  className="flex items-center gap-1 hover:text-[#1B4B43] transition-colors font-medium text-[12px] lg:text-[13px] uppercase tracking-wider py-1"
+                >
+                  {item.name}
+                  <ChevronDown size={14} className={`${openDropdown === item.name ? 'rotate-180' : ''} transition-transform duration-200`} />
+                </button>
+              ) : (
+                <Link
+                  to={item.path || "/"}
+                  className="flex items-center gap-1 hover:text-[#1B4B43] transition-colors font-medium text-[12px] lg:text-[13px] uppercase tracking-wider py-1"
+                >
+                  {item.name}
+                </Link>
+              )}
 
               {item.children && (
-                <div className="absolute left-0 top-full pt-4 w-52 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="bg-white shadow-xl rounded-xl border border-gray-100 py-2 flex flex-col overflow-hidden">
+                <div className={`absolute left-0 top-full pt-3 w-52 transition-all duration-300 ease-out z-50 ${openDropdown === item.name ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
+                  <div className="bg-white shadow-xl rounded-2xl border border-gray-100 py-2 flex flex-col overflow-hidden">
                     {item.children.map((child) => (
                       <Link
                         key={child.name}
                         to={child.path || "/"}
+                        onClick={() => setOpenDropdown(null)}
                         className="px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
                       >
                         {child.name}
@@ -221,52 +245,50 @@ const Header: React.FC = () => {
       </nav>
 
       {/* MOBILE MENU */}
-      {mobileMenuOpen && (
-        <nav className="md:hidden bg-white border-t border-gray-100 py-4">
-          <div className="max-w-7xl mx-auto px-3 space-y-1">
-            {menu.map((item) => (
-              <div key={item.name}>
-                {item.children ? (
-                  <>
-                    <button
-                      onClick={() => toggleSubmenu(item.name)}
-                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm"
-                    >
-                      {item.name}
-                      <ChevronDown 
-                        size={16} 
-                        className={`transition-transform ${openSubmenu === item.name ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-                    {openSubmenu === item.name && (
-                      <div className="bg-gray-50 ml-4 border-l-2 border-[#1B4B43]">
-                        {item.children.map((child) => (
-                          <Link
-                            key={child.name}
-                            to={child.path || "/"}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="block px-4 py-2.5 text-sm text-gray-600 hover:text-[#1B4B43] transition-colors"
-                          >
-                            {child.name}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    to={item.path || "/"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm"
+      <nav className={`md:hidden bg-white border-t border-gray-100 overflow-hidden transition-[max-height,opacity] duration-300 ${mobileMenuOpen ? 'max-h-[1200px] opacity-100 py-4' : 'max-h-0 opacity-0 py-0'}`}>
+        <div className={`max-w-7xl mx-auto px-3 space-y-1 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}>
+          {menu.map((item) => (
+            <div key={item.name}>
+              {item.children ? (
+                <>
+                  <button
+                    onClick={() => toggleSubmenu(item.name)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm"
                   >
                     {item.name}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-        </nav>
-      )}
+                    <ChevronDown 
+                      size={16} 
+                      className={`transition-transform duration-300 ${openSubmenu === item.name ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ${openSubmenu === item.name ? 'max-h-72 opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className="bg-gray-50 ml-4 border-l-2 border-[#1B4B43]">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.name}
+                          to={child.path || "/"}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block px-4 py-2.5 text-sm text-gray-600 hover:text-[#1B4B43] transition-colors"
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  to={item.path || "/"}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm"
+                >
+                  {item.name}
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
+      </nav>
     </header>
   );
 };

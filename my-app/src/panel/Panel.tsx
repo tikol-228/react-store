@@ -63,19 +63,6 @@ const Panel: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
-  const allowedCategoryNames = [
-    'Уход за лицом',
-    'Уход за телом',
-    'Сыворотки',
-    'Маски для лица',
-    'Лосьоны для тела',
-    'Скрабы для тела',
-  ];
-
-  const adminCategories = categories.filter((category) =>
-    allowedCategoryNames.includes(category.name)
-  );
-
   const [adminNewOrder, setAdminNewOrder] = useState({
     customer_name: '',
     customer_email: '',
@@ -275,8 +262,8 @@ const Panel: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Доступ запрещён</h1>
+          <p className="text-gray-600">У вас нет прав для доступа к этой странице.</p>
         </div>
       </div>
     );
@@ -295,12 +282,12 @@ const Panel: React.FC = () => {
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Панель администратора</h1>
             <Link
               to="/"
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
             >
-              Back to Store
+              Вернуться в магазин
             </Link>
           </div>
         </div>
@@ -310,10 +297,10 @@ const Panel: React.FC = () => {
         {/* Navigation Tabs */}
         <div className="flex space-x-1 mb-8 bg-white p-1 rounded-lg shadow-sm">
           {[
-            { id: 'dashboard', label: 'Dashboard', icon: Package },
-            { id: 'products', label: 'Products', icon: ShoppingBag },
-            { id: 'orders', label: 'Orders', icon: CheckCircle },
-            { id: 'users', label: 'Users', icon: Users },
+            { id: 'dashboard', label: 'Панель', icon: Package },
+            { id: 'products', label: 'Товары', icon: ShoppingBag },
+            { id: 'orders', label: 'Заказы', icon: CheckCircle },
+            { id: 'users', label: 'Пользователи', icon: Users },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -336,7 +323,7 @@ const Panel: React.FC = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
+                  <p className="text-sm font-medium text-gray-600">Всего заказов</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
                 </div>
                 <ShoppingBag className="h-8 w-8 text-blue-600" />
@@ -345,7 +332,7 @@ const Panel: React.FC = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
+                  <p className="text-sm font-medium text-gray-600">Всего пользователей</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
                 </div>
                 <Users className="h-8 w-8 text-green-600" />
@@ -354,7 +341,7 @@ const Panel: React.FC = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Products</p>
+                  <p className="text-sm font-medium text-gray-600">Всего товаров</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.totalProducts}</p>
                 </div>
                 <Package className="h-8 w-8 text-purple-600" />
@@ -363,7 +350,7 @@ const Panel: React.FC = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Unread Messages</p>
+                  <p className="text-sm font-medium text-gray-600">Новые сообщения</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.unreadContacts}</p>
                 </div>
                 <AlertCircle className="h-8 w-8 text-red-600" />
@@ -377,11 +364,11 @@ const Panel: React.FC = () => {
           <div className="space-y-6">
             {/* Add Product Form */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
+              <h2 className="text-xl font-semibold mb-4">Добавить новый товар</h2>
               <form onSubmit={handleProductSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Product Name"
+                  placeholder="Название товара"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-md"
@@ -389,7 +376,7 @@ const Panel: React.FC = () => {
                 />
                 <input
                   type="number"
-                  placeholder="Price"
+                  placeholder="Цена"
                   value={newProduct.price}
                   onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
                   className="px-3 py-2 border border-gray-300 rounded-md"
@@ -414,7 +401,7 @@ const Panel: React.FC = () => {
                 </div>
                 <input
                   type="number"
-                  placeholder="Stock Quantity"
+                  placeholder="Количество на складе"
                   value={newProduct.stock_quantity}
                   onChange={(e) => setNewProduct({ ...newProduct, stock_quantity: parseInt(e.target.value) })}
                   className="px-3 py-2 border border-gray-300 rounded-md"
@@ -426,14 +413,14 @@ const Panel: React.FC = () => {
                   className="px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="">Выберите категорию</option>
-                  {(adminCategories.length > 0 ? adminCategories : categories).map((c) => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
                 </select>
                 <textarea
-                  placeholder="Description"
+                  placeholder="Описание"
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-md md:col-span-2"
@@ -443,7 +430,7 @@ const Panel: React.FC = () => {
                   type="submit"
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 md:col-span-2"
                 >
-                  Add Product
+                  Добавить товар
                 </button>
               </form>
             </div>
@@ -451,16 +438,16 @@ const Panel: React.FC = () => {
             {/* Products List */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-xl font-semibold">Products ({products.length})</h2>
+                <h2 className="text-xl font-semibold">Товары ({products.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Товар</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Остаток</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -592,18 +579,18 @@ const Panel: React.FC = () => {
 
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold">Orders ({orders.length})</h2>
+              <h2 className="text-xl font-semibold">Заказы ({orders.length})</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID заказа</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Клиент</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -624,11 +611,11 @@ const Panel: React.FC = () => {
                           onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
                           className="text-sm border border-gray-300 rounded px-2 py-1"
                         >
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
+                          <option value="pending">В ожидании</option>
+                          <option value="processing">В обработке</option>
+                          <option value="shipped">Отправлено</option>
+                          <option value="delivered">Доставлено</option>
+                          <option value="cancelled">Отменено</option>
                         </select>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -655,7 +642,7 @@ const Panel: React.FC = () => {
         {activeTab === 'users' && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold">Users ({users.length})</h2>
+              <h2 className="text-xl font-semibold">Пользователи ({users.length})</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -665,7 +652,7 @@ const Panel: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">

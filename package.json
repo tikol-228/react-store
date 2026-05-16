@@ -7,9 +7,12 @@
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
     "start": "npm run seed --prefix server && concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
     "install-server": "npm install --prefix server",
-    "install-client": "npm install --prefix my-app"
+    "install-client": "npm install --prefix my-app",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "wrangler": "^4.92.0"
   }
 }

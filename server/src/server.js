@@ -32,7 +32,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+const corsOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map((o) => o.trim()).filter(Boolean)
+  : true;
+app.use(cors({ origin: corsOrigins, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(loggerMiddleware);
@@ -61,13 +64,21 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Initialize database and start server
-initDatabase().then(() => {
-  app.listen(PORT, () => {
+// Initialize database, seed, and start server
+async function bootstrap() {
+  const { seedDatabase } = await import('./database/seed.js');
+  await initDatabase();
+  if (process.env.RUN_SEED !== 'false') {
+    await seedDatabase();
+  }
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database: ${process.env.DB_PATH || 'default path'}`);
   });
-}).catch((error) => {
-  console.error('Failed to initialize database:', error);
+}
+
+bootstrap().catch((error) => {
+  console.error('Failed to start server:', error);
   process.exit(1);
 });

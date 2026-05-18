@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -9,8 +10,14 @@ const __dirname = dirname(__filename);
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../../database/store.db');
 
+function ensureDbDirectory() {
+  const dir = path.dirname(DB_PATH);
+  fs.mkdirSync(dir, { recursive: true });
+}
+
 // Database initialization
 export const initDatabase = async () => {
+  ensureDbDirectory();
   const db = await open({
     filename: DB_PATH,
     driver: sqlite3.Database,

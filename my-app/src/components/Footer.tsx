@@ -39,8 +39,16 @@ const Footer: React.FC = () => {
           <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Для клиентов</h3>
           <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-black/70">
             <li>Как купить</li>
-            <li>Оплата</li>
-            <li>Доставка</li>
+            <li>
+              <Link to="/payment" className="hover:text-black transition-colors">
+                Оплата
+              </Link>
+            </li>
+            <li>
+              <Link to="/delivery" className="hover:text-black transition-colors">
+                Доставка
+              </Link>
+            </li>
             <li>Информация о доставке</li>
             <li className="hidden sm:block">Налоги и сборы</li>
           </ul>
@@ -52,7 +60,11 @@ const Footer: React.FC = () => {
           <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-black/70">
             <li>Политика конфиденциальности</li>
             <li>Условия использования</li>
-            <li>Возврат и компенсации</li>
+            <li>
+              <Link to="/returns" className="hover:text-black transition-colors">
+                Возврат и компенсации
+              </Link>
+            </li>
             <li className="hidden sm:block">Возвраты и замены</li>
             <li className="hidden sm:block">Гарантия</li>
           </ul>

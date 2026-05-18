@@ -1,38 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { Search, Sun, ShoppingBag, User, ChevronDown, Menu, X, Heart, Package, LogOut, Settings } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useFavorites } from '../contexts/FavoritesContext';
+import { navMenu, isNavLink } from '../data/navMenu';
+import { scrollToSection } from '../utils/scrollToSection';
 import logo from '../icons/logo.jpeg'
-
-const menu = [
-  { name: "Главная", path: "/" },
-  {
-    name: "Категории",
-    path: "/#categories",
-    children: [
-      { name: "DIBI Milano", path: "/#products" },
-      { name: "Germaine de Capuccini", path: "/#products" },
-    ],
-  },
-  { name: "Профессиональный уход", path: "/#products" },
-  { name: "Домашний уход", path: "/#products" },
-  { name: "Оплата", path: "/#features" },
-  { name: "Доставка", path: "/#features" },
-  { name: "Возврат товара", path: "/#features" },
-  { name: "Контакты", path: "/contacts" },
-];
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { totalItems } = useCart();
   const { favorites } = useFavorites();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const closeMenus = () => {
+    setMobileMenuOpen(false);
+    setOpenSubmenu(null);
+    setOpenDropdown(null);
+  };
+
+  const goToSection = (section: string) => {
+    closeMenus();
+
+    if (location.pathname === '/') {
+      scrollToSection(section);
+      window.history.replaceState(null, '', `#${section}`);
+      return;
+    }
+
+    navigate(`/#${section}`);
+  };
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -54,27 +58,30 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const navLinkClass =
+    'flex items-center gap-1 hover:text-[#1B4B43] transition-colors font-medium text-[12px] lg:text-[13px] uppercase tracking-wider py-1';
+  const mobileLinkClass =
+    'block w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm';
+
   return (
-    <header className={`w-full sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-gray-200 bg-white/95 backdrop-blur-xl shadow-sm' : 'bg-white'}`}>
-      {/* TOP */}
+    <header className={`w-full sticky top-0 z-50 overflow-visible transition-all duration-300 ${scrolled ? 'border-b border-gray-200 bg-white shadow-sm' : 'bg-white'}`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 h-16 sm:h-20 flex items-center justify-between">
-        {/* MOBILE MENU BUTTON */}
         <button 
           onClick={toggleMobileMenu}
           className="md:hidden p-2 hover:bg-gray-50 rounded-full transition-colors"
+          type="button"
+          aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* LOGO */}
-        <Link to="/" className="flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
+        <Link to="/" onClick={() => location.pathname === '/' && goToSection('top')} className="flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
           <img src={logo} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center object-cover" alt="Logo"/>
           <span className="hidden sm:inline text-lg sm:text-xl font-bold text-[#1A1A1A] tracking-tight">
             Art Capital Estetic
           </span>
         </Link>
 
-        {/* SEARCH - DESKTOP */}
         <div className="relative w-[300px] lg:w-[450px] hidden lg:block">
           <input
             type="text"
@@ -87,9 +94,8 @@ const Header: React.FC = () => {
           />
         </div>
 
-        {/* ACTIONS */}
         <div className="flex items-center gap-2 sm:gap-4 text-gray-700">
-          <button className="p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:block">
+          <button className="p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:block" type="button">
             <Sun size={20} className="text-gray-500" />
           </button>
           
@@ -115,6 +121,7 @@ const Header: React.FC = () => {
             <button 
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-full transition-colors group"
+              type="button"
             >
               <div className="relative">
                 <User size={20} className={user ? "text-[#1B4B43]" : "text-gray-500"} />
@@ -128,7 +135,6 @@ const Header: React.FC = () => {
               <ChevronDown size={14} className={`text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* User Dropdown Menu */}
             {userMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
@@ -174,6 +180,7 @@ const Header: React.FC = () => {
                       setUserMenuOpen(false);
                     }}
                     className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
+                    type="button"
                   >
                     <LogOut size={16} />
                     Выйти
@@ -185,7 +192,6 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* SEARCH - MOBILE */}
       <div className="block lg:hidden px-3 pb-3">
         <div className="relative">
           <input
@@ -200,58 +206,92 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* DESKTOP NAV */}
-      <nav className="w-full border-t border-gray-50 hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-center gap-6 lg:gap-8 text-gray-500 overflow-x-auto">
-          {menu.map((item) => (
-            <div key={item.name} className="relative whitespace-nowrap" onMouseLeave={() => setOpenDropdown(null)}>
-              {item.children ? (
-                <button
-                  type="button"
-                  onClick={() => toggleDropdown(item.name)}
-                  className="flex items-center gap-1 hover:text-[#1B4B43] transition-colors font-medium text-[12px] lg:text-[13px] uppercase tracking-wider py-1"
-                >
-                  {item.name}
-                  <ChevronDown size={14} className={`${openDropdown === item.name ? 'rotate-180' : ''} transition-transform duration-200`} />
-                </button>
-              ) : (
-                <Link
-                  to={item.path || "/"}
-                  className="flex items-center gap-1 hover:text-[#1B4B43] transition-colors font-medium text-[12px] lg:text-[13px] uppercase tracking-wider py-1"
-                >
+      <nav className="w-full border-t border-gray-50 hidden md:block overflow-visible">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-center gap-6 lg:gap-8 text-gray-500 overflow-visible">
+          {navMenu.map((item) => (
+            <div
+              key={item.name}
+              className="relative whitespace-nowrap"
+              onMouseEnter={() => 'children' in item && item.children && setOpenDropdown(item.name)}
+              onMouseLeave={() => 'children' in item && item.children && setOpenDropdown(null)}
+            >
+              {isNavLink(item) ? (
+                <Link to={item.path} className={navLinkClass} onClick={closeMenus}>
                   {item.name}
                 </Link>
-              )}
-
-              {item.children && (
-                <div className={`absolute left-0 top-full pt-3 w-52 transition-all duration-300 ease-out z-50 ${openDropdown === item.name ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
-                  <div className="bg-white shadow-xl rounded-2xl border border-gray-100 py-2 flex flex-col overflow-hidden">
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.name}
-                        to={child.path || "/"}
-                        onClick={() => setOpenDropdown(null)}
-                        className="px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
-                      >
-                        {child.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+              ) : item.children ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => toggleDropdown(item.name)}
+                    className={navLinkClass}
+                    aria-expanded={openDropdown === item.name}
+                  >
+                    {item.name}
+                    <ChevronDown size={14} className={`${openDropdown === item.name ? 'rotate-180' : ''} transition-transform duration-200`} />
+                  </button>
+                  {openDropdown === item.name && (
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 z-[100]">
+                      <div className="w-[min(100vw-2rem,22rem)] rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl ring-1 ring-black/5">
+                        <button
+                          type="button"
+                          onClick={() => goToSection(item.section)}
+                          className="mb-1 w-full rounded-xl px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#1B4B43] hover:bg-[#1B4B43]/5 transition-colors"
+                        >
+                          Все категории
+                        </button>
+                        <div className="flex flex-col gap-2">
+                          {item.children.map((child) => (
+                            <button
+                              key={child.name}
+                              type="button"
+                              onClick={() => goToSection(child.section)}
+                              className="group flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-2 text-left transition-all hover:border-[#1B4B43]/30 hover:bg-gray-50 hover:shadow-md"
+                            >
+                              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                <img
+                                  src={child.image}
+                                  alt={child.name}
+                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#1B4B43]">
+                                  {child.name}
+                                </p>
+                                <p className="mt-0.5 text-xs leading-snug text-gray-500">
+                                  {child.description}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button type="button" onClick={() => goToSection(item.section)} className={navLinkClass}>
+                  {item.name}
+                </button>
               )}
             </div>
           ))}
         </div>
       </nav>
 
-      {/* MOBILE MENU */}
       <nav className={`md:hidden bg-white border-t border-gray-100 overflow-hidden transition-[max-height,opacity] duration-300 ${mobileMenuOpen ? 'max-h-[1200px] opacity-100 py-4' : 'max-h-0 opacity-0 py-0'}`}>
         <div className={`max-w-7xl mx-auto px-3 space-y-1 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}>
-          {menu.map((item) => (
+          {navMenu.map((item) => (
             <div key={item.name}>
-              {item.children ? (
+              {isNavLink(item) ? (
+                <Link to={item.path} onClick={closeMenus} className={mobileLinkClass}>
+                  {item.name}
+                </Link>
+              ) : item.children ? (
                 <>
                   <button
+                    type="button"
                     onClick={() => toggleSubmenu(item.name)}
                     className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm"
                   >
@@ -261,29 +301,38 @@ const Header: React.FC = () => {
                       className={`transition-transform duration-300 ${openSubmenu === item.name ? 'rotate-180' : ''}`}
                     />
                   </button>
-                  <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ${openSubmenu === item.name ? 'max-h-72 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="bg-gray-50 ml-4 border-l-2 border-[#1B4B43]">
+                  <div className={`overflow-hidden transition-[max-height] duration-300 ${openSubmenu === item.name ? 'max-h-[520px]' : 'max-h-0'}`}>
+                    <div className="ml-3 space-y-2 border-l-2 border-[#1B4B43] bg-white py-2 pl-3 pr-1">
+                      <button
+                        type="button"
+                        onClick={() => goToSection(item.section)}
+                        className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#1B4B43] hover:bg-[#1B4B43]/5"
+                      >
+                        Все категории
+                      </button>
                       {item.children.map((child) => (
-                        <Link
+                        <button
                           key={child.name}
-                          to={child.path || "/"}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block px-4 py-2.5 text-sm text-gray-600 hover:text-[#1B4B43] transition-colors"
+                          type="button"
+                          onClick={() => goToSection(child.section)}
+                          className="group flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white p-2 text-left shadow-sm"
                         >
-                          {child.name}
-                        </Link>
+                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                            <img src={child.image} alt={child.name} className="h-full w-full object-cover" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-[#1A1A1A]">{child.name}</p>
+                            <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{child.description}</p>
+                          </div>
+                        </button>
                       ))}
                     </div>
                   </div>
                 </>
               ) : (
-                <Link
-                  to={item.path || "/"}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-gray-700 font-medium text-sm"
-                >
+                <button type="button" onClick={() => goToSection(item.section)} className={mobileLinkClass}>
                   {item.name}
-                </Link>
+                </button>
               )}
             </div>
           ))}

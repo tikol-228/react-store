@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import Header from '../components/Header'
+import { scrollToSectionFromHash } from '../utils/scrollToSection'
 import SubFooter from '../components/SubFooter'
 import plane from '../icons/plane.svg'
 import returnIcon from '../icons/returnIcon.svg'
@@ -8,9 +11,17 @@ import Footer from '../components/Footer'
 import ProductsGrid from '../components/ProductsGrid'
 
 const Home = () => {
+  const location = useLocation()
+
+  useEffect(() => {
+    if (location.hash) {
+      scrollToSectionFromHash(location.hash)
+    }
+  }, [location.hash])
+
   return (
     <>
-    <div className="bg-[#FAF9F6]">
+    <div id="top" className="bg-[#FAF9F6]">
       <Header />
       
       {/* Featured Categories */}
@@ -44,7 +55,7 @@ const Home = () => {
       </section>
 
       {/* About Section - Юля Зубкевич */}
-      <section className="py-12 sm:py-24 overflow-hidden">
+      <section id="about" className="py-12 sm:py-24 overflow-hidden">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
           <div className="relative order-2 lg:order-1">
             <div className="aspect-[4/5] rounded-2xl sm:rounded-[40px] overflow-hidden shadow-2xl">

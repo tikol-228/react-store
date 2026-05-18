@@ -262,7 +262,7 @@ const Panel: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Доступ запрещён</h1>
+подготовь для деплоя на railway          <h1 className="text-2xl font-bold text-gray-900 mb-2">Доступ запрещён</h1>
           <p className="text-gray-600">У вас нет прав для доступа к этой странице.</p>
         </div>
       </div>

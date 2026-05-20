@@ -120,6 +120,7 @@ export const initDatabase = async () => {
       email TEXT NOT NULL,
       phone TEXT,
       message TEXT NOT NULL,
+      type TEXT DEFAULT 'contact' CHECK (type IN ('contact', 'booking')),
       is_read BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -141,9 +142,20 @@ export const initDatabase = async () => {
     CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
   `);
 
+  await migrateContactsTable(db);
+
   console.log('Database initialized successfully');
   return db;
 };
+
+async function migrateContactsTable(db) {
+  const columns = await db.all('PRAGMA table_info(contacts)');
+  const hasType = columns.some((col) => col.name === 'type');
+  if (!hasType) {
+    await db.run(`ALTER TABLE contacts ADD COLUMN type TEXT DEFAULT 'contact'`);
+    await db.run(`UPDATE contacts SET type = 'contact' WHERE type IS NULL`);
+  }
+}
 
 // Get database instance
 export const getDatabase = async () => {

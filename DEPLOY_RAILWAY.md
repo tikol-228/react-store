@@ -102,7 +102,18 @@ sqlite3 server/database/store.db "SELECT COUNT(*) FROM products;"
 
 | Проблема | Решение |
 |----------|---------|
+| `Cannot find package 'bcryptjs'` | Сервис **api** должен иметь **Root Directory = `server`**, Start: `node src/server.js`. Не деплойте API из корня с dev-скриптом `concurrently`. |
+| CORS / 502 на login | API не запущен — смотрите логи api. После фикса деплоя: `FRONTEND_URL=https://web-production-acff8.up.railway.app` |
 | CORS error | `FRONTEND_URL` = точный URL web (без `/` в конце) |
 | Пустой каталог | Перезапустить api (seed), проверить volume |
 | API 404 на фронте | Пересобрать web с правильным `VITE_API_URL` |
 | Логин не работает | Проверить `JWT_SECRET`, что api и web в одном проекте |
+
+### Важно: настройки сервиса api в Railway
+
+| Поле | Значение |
+|------|----------|
+| Root Directory | `server` |
+| Build Command | `npm ci --omit=dev` (или пусто — возьмётся из `server/railway.toml`) |
+| Start Command | `node src/server.js` |
+| Healthcheck | `/api/health` |

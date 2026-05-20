@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getCategories,
+  getBrands,
   getCategory,
   createCategory,
   updateCategory,
@@ -13,6 +14,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getCategories);
+router.get('/brands', getBrands);
 router.get('/:id', getCategory);
 
 // Admin routes

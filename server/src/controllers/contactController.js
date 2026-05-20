@@ -20,21 +20,27 @@ export const createContact = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const contact = await Contact.create(req.body);
+  const type = req.body.type === 'booking' ? 'booking' : 'contact';
+  const contact = await Contact.create({ ...req.body, type });
 
-  // Create admin notification
-  await AdminNotification.newContact(contact.id);
+  if (type === 'booking') {
+    await AdminNotification.newBooking(contact.id);
+  } else {
+    await AdminNotification.newContact(contact.id);
+  }
 
   res.status(201).json({
-    message: 'Contact message sent successfully',
+    message: type === 'booking' ? 'Заявка на подбор косметики отправлена' : 'Contact message sent successfully',
     contact
   });
 });
 
 // Get all contacts (admin only)
 export const getContacts = asyncHandler(async (req, res) => {
-  const contacts = await Contact.findAll();
-  const unreadCount = await Contact.getUnreadCount();
+  const { type } = req.query;
+  const filters = type ? { type: String(type) } : {};
+  const contacts = await Contact.findAll(filters);
+  const unreadCount = await Contact.getUnreadCount(type ? String(type) : null);
 
   res.json({ contacts, unreadCount });
 });

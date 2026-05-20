@@ -51,4 +51,12 @@ export class AdminNotification {
       related_id: contactId
     });
   }
+
+  static async newBooking(contactId) {
+    return await this.create({
+      type: 'booking',
+      message: 'Новая заявка на подбор косметики',
+      related_id: contactId
+    });
+  }
 }

@@ -1,5 +1,7 @@
 import React from "react";
 import { Sun } from "lucide-react";
+import { Link } from "react-router-dom";
+import BookAppointmentButton from "./BookAppointmentButton";
 
 const Banner: React.FC = () => {
   return (
@@ -32,12 +34,15 @@ const Banner: React.FC = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-            <button className="px-6 sm:px-8 py-3 sm:py-4 bg-[#1B4B43] text-white rounded-full font-medium text-sm sm:text-base hover:bg-[#2a6b5f] transition-all shadow-lg shadow-[#1B4B43]/20">
-              Записаться
-            </button>
-            <button className="px-6 sm:px-8 py-3 sm:py-4 border border-gray-200 text-[#1A1A1A] rounded-full font-medium text-sm sm:text-base hover:bg-white transition-all">
+            <BookAppointmentButton className="px-6 sm:px-8 py-3 sm:py-4 bg-[#1B4B43] text-white rounded-full font-medium text-sm sm:text-base hover:bg-[#2a6b5f] transition-all shadow-lg shadow-[#1B4B43]/20 text-center">
+              Подобрать косметику
+            </BookAppointmentButton>
+            <Link
+              to="/#about"
+              className="px-6 sm:px-8 py-3 sm:py-4 border border-gray-200 text-[#1A1A1A] rounded-full font-medium text-sm sm:text-base hover:bg-white transition-all text-center"
+            >
               Обо мне
-            </button>
+            </Link>
           </div>
 
           <div className="pt-4 sm:pt-8 flex items-center gap-6 sm:gap-8">

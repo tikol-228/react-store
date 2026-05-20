@@ -8,11 +8,13 @@ import { validationResult } from 'express-validator';
 
 // Get dashboard stats
 export const getDashboardStats = asyncHandler(async (req, res) => {
-  const [totalOrders, totalUsers, totalProducts, unreadContacts, unreadNotifications] = await Promise.all([
+  const [totalOrders, totalUsers, totalProducts, unreadContacts, unreadBookings, unreadNotifications] =
+    await Promise.all([
     Order.getCount({}),
     User.findAll().then(users => users.length),
     Product.getCount({}),
     Contact.getUnreadCount(),
+    Contact.getUnreadCount('booking'),
     AdminNotification.getUnreadCount()
   ]);
 
@@ -28,6 +30,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       totalUsers,
       totalProducts,
       unreadContacts,
+      unreadBookings,
       unreadNotifications
     },
     recentOrders,

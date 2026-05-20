@@ -25,10 +25,19 @@ const Admin: React.FC = () => {
         if (!required) {
           setUnlocked(true);
         }
-      } catch {
+      } catch (err: unknown) {
         if (!cancelled) {
-          setPinRequired(false);
-          setUnlocked(true);
+          const status =
+            err && typeof err === 'object' && 'response' in err
+              ? (err as { response?: { status?: number } }).response?.status
+              : undefined;
+          if (status === 401 || status === 403) {
+            setPinRequired(true);
+            setUnlocked(false);
+          } else {
+            setPinRequired(false);
+            setUnlocked(true);
+          }
         }
       } finally {
         if (!cancelled) setChecking(false);

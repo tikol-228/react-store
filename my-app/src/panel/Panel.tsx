@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { adminAPI, productsAPI, ordersAPI, usersAPI, categoriesAPI } from '../services/api';
+import { adminAPI, productsAPI, ordersAPI, usersAPI, categoriesAPI, contactsAPI } from '../services/api';
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Trash2, CheckCircle, Users, Loader, AlertCircle } from 'lucide-react';
+import { Package, ShoppingBag, Trash2, CheckCircle, Users, Loader, Calendar, AlertCircle } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
+import { filterStoreCategories } from '../data/storeCategories';
+import CategorySelect from '../components/CategorySelect';
 
 interface Product {
   id: number;
@@ -45,22 +47,35 @@ interface User {
   updated_at: string;
 }
 
+interface ContactRecord {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+  type?: string;
+  is_read: number;
+  created_at: string;
+}
+
 interface DashboardStats {
   totalOrders: number;
   totalUsers: number;
   totalProducts: number;
   unreadContacts: number;
+  unreadBookings: number;
   unreadNotifications: number;
 }
 
 const Panel: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'users'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'users' | 'bookings'>('dashboard');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [bookings, setBookings] = useState<ContactRecord[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
   const [adminNewOrder, setAdminNewOrder] = useState({
@@ -95,23 +110,55 @@ const Panel: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsRes, productsRes, ordersRes, usersRes, categoriesRes] = await Promise.all([
+      const [statsRes, productsRes, ordersRes, usersRes, categoriesRes, bookingsRes] = await Promise.all([
         adminAPI.getDashboardStats(),
         productsAPI.getProducts({ limit: 200 }),
         ordersAPI.getOrders({ limit: 50 }),
         usersAPI.getUsers(),
         categoriesAPI.getCategories(),
+        contactsAPI.getContacts('booking'),
       ]);
 
       setStats(statsRes.data.stats);
       setProducts(productsRes.data.products || []);
       setOrders(ordersRes.data.orders || []);
       setUsers(usersRes.data.users || []);
-      setCategories(categoriesRes.data.categories || []);
+      setBookings(bookingsRes.data.contacts || []);
+      setCategories(filterStoreCategories(categoriesRes.data.categories || []));
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBookings = async () => {
+    try {
+      const { data } = await contactsAPI.getContacts('booking');
+      setBookings(data.contacts || []);
+      const statsRes = await adminAPI.getDashboardStats();
+      setStats(statsRes.data.stats);
+    } catch (error) {
+      console.error('Failed to load bookings:', error);
+    }
+  };
+
+  const handleMarkBookingRead = async (id: number) => {
+    try {
+      await contactsAPI.markAsRead(id);
+      await loadBookings();
+    } catch (error) {
+      console.error('Failed to mark booking as read:', error);
+    }
+  };
+
+  const handleDeleteBooking = async (id: number) => {
+    if (!window.confirm('Удалить эту заявку на подбор косметики?')) return;
+    try {
+      await contactsAPI.deleteContact(id);
+      await loadBookings();
+    } catch (error) {
+      console.error('Failed to delete booking:', error);
     }
   };
 
@@ -262,7 +309,7 @@ const Panel: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-подготовь для деплоя на railway          <h1 className="text-2xl font-bold text-gray-900 mb-2">Доступ запрещён</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Доступ запрещён</h1>
           <p className="text-gray-600">У вас нет прав для доступа к этой странице.</p>
         </div>
       </div>
@@ -301,6 +348,7 @@ const Panel: React.FC = () => {
             { id: 'products', label: 'Товары', icon: ShoppingBag },
             { id: 'orders', label: 'Заказы', icon: CheckCircle },
             { id: 'users', label: 'Пользователи', icon: Users },
+            { id: 'bookings', label: 'Подбор', icon: Calendar },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -347,15 +395,19 @@ const Panel: React.FC = () => {
                 <Package className="h-8 w-8 text-purple-600" />
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <button
+              type="button"
+              onClick={() => setActiveTab('bookings')}
+              className="bg-white p-6 rounded-lg shadow-sm text-left hover:ring-2 hover:ring-[#1B4B43]/20 transition-all w-full"
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Новые сообщения</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.unreadContacts}</p>
+                  <p className="text-sm font-medium text-gray-600">Новые записи</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.unreadBookings ?? 0}</p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-red-600" />
+                <Calendar className="h-8 w-8 text-[#1B4B43]" />
               </div>
-            </div>
+            </button>
           </div>
         )}
 
@@ -407,18 +459,11 @@ const Panel: React.FC = () => {
                   className="px-3 py-2 border border-gray-300 rounded-md"
                   required
                 />
-                <select
+                <CategorySelect
+                  categories={categories}
                   value={newProduct.category_id}
-                  onChange={(e) => setNewProduct({ ...newProduct, category_id: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">Выберите категорию</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(category_id) => setNewProduct({ ...newProduct, category_id })}
+                />
                 <textarea
                   placeholder="Описание"
                   value={newProduct.description}
@@ -635,6 +680,105 @@ const Panel: React.FC = () => {
               </table>
             </div>
             </div>
+          </div>
+        )}
+
+        {/* Bookings Tab */}
+        {activeTab === 'bookings' && (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">Подбор косметики ({bookings.length})</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Заявки с формы «Подобрать косметику» на сайте
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadBookings}
+                className="px-4 py-2 text-sm font-medium text-[#1B4B43] border border-[#1B4B43]/30 rounded-lg hover:bg-[#1B4B43]/5"
+              >
+                Обновить
+              </button>
+            </div>
+
+            {bookings.length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Заявок на подбор косметики пока нет</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Клиент</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Контакты</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Комментарий</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {bookings.map((booking) => (
+                      <tr
+                        key={booking.id}
+                        className={booking.is_read ? 'bg-white' : 'bg-[#1B4B43]/5'}
+                      >
+                        <td className="px-4 py-4 text-sm text-gray-600 whitespace-nowrap">
+                          {new Date(booking.created_at).toLocaleString('ru-RU')}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-medium text-gray-900">{booking.name}</td>
+                        <td className="px-4 py-4 text-sm text-gray-700">
+                          <a href={`tel:${booking.phone}`} className="block hover:text-[#1B4B43]">
+                            {booking.phone || '—'}
+                          </a>
+                          <a href={`mailto:${booking.email}`} className="block text-gray-500 hover:text-[#1B4B43]">
+                            {booking.email}
+                          </a>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600 max-w-xs">
+                          <p className="line-clamp-3">{booking.message}</p>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              booking.is_read
+                                ? 'bg-gray-100 text-gray-600'
+                                : 'bg-[#1B4B43] text-white'
+                            }`}
+                          >
+                            {booking.is_read ? 'Просмотрена' : 'Новая'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                          <div className="flex items-center gap-2">
+                            {!booking.is_read && (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkBookingRead(booking.id)}
+                                className="px-3 py-1.5 text-[#1B4B43] border border-[#1B4B43]/30 rounded-md hover:bg-[#1B4B43]/5"
+                              >
+                                Прочитано
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBooking(booking.id)}
+                              className="p-1.5 text-red-600 hover:text-red-800"
+                              aria-label="Удалить"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

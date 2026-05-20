@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Header from '../components/Header'
-import { scrollToSectionFromHash } from '../utils/scrollToSection'
+import { goToProductsCatalog, scrollToSectionFromHash } from '../utils/scrollToSection'
 import SubFooter from '../components/SubFooter'
 import plane from '../icons/plane.svg'
 import returnIcon from '../icons/returnIcon.svg'
@@ -9,6 +9,21 @@ import secure from '../icons/secure.svg'
 import support from '../icons/support.svg'
 import Footer from '../components/Footer'
 import ProductsGrid from '../components/ProductsGrid'
+import BookAppointmentButton from '../components/BookAppointmentButton'
+
+const FACE_CARE_IMG =
+  'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=900'
+const BODY_CARE_IMG =
+  'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=900'
+const FACE_CARE_FALLBACK =
+  'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=900'
+
+const categoryBanners = [
+  { name: 'Уход за лицом', count: 24, img: FACE_CARE_IMG, fallback: FACE_CARE_FALLBACK },
+  { name: 'Уход за телом', count: 18, img: BODY_CARE_IMG, fallback: BODY_CARE_IMG },
+] as const
+
+const goToProducts = () => goToProductsCatalog()
 
 const Home = () => {
   const location = useLocation()
@@ -16,8 +31,18 @@ const Home = () => {
   useEffect(() => {
     if (location.hash) {
       scrollToSectionFromHash(location.hash)
+      return
     }
-  }, [location.hash])
+    if ((location.state as { scrollToProducts?: boolean } | null)?.scrollToProducts) {
+      goToProductsCatalog()
+      return
+    }
+    const q = new URLSearchParams(location.search).get('q')
+    if (q) {
+      goToProductsCatalog()
+      window.history.replaceState(null, '', `/?q=${encodeURIComponent(q)}#products`)
+    }
+  }, [location.hash, location.search, location.state])
 
   return (
     <>
@@ -32,23 +57,40 @@ const Home = () => {
               <span className="text-[#D19D6B] font-bold text-xs uppercase tracking-widest">Изучайте</span>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-[#1A1A1A]">По категориям</h2>
             </div>
-            <button className="text-xs sm:text-sm font-bold text-[#1B4B43] border-b-2 border-[#1B4B43] pb-1 hover:text-[#2a6b5f] hover:border-[#2a6b5f] transition-all self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={goToProducts}
+              className="text-xs sm:text-sm font-bold text-[#1B4B43] border-b-2 border-[#1B4B43] pb-1 hover:text-[#2a6b5f] hover:border-[#2a6b5f] transition-all self-start sm:self-auto"
+            >
               Все категории
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-8">
-            {[
-              { name: 'Уход за лицом', img: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=400', count: 24 },
-              { name: 'Уход за телом', img: 'https://images.unsplash.com/photo-1552046122-03184de85e08?auto=format&fit=crop&q=80&w=400', count: 18 },
-            ].map((cat) => (
-              <div key={cat.name} className="group relative aspect-[4/5] rounded-2xl sm:rounded-[30px] overflow-hidden cursor-pointer">
-                <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-4 sm:p-8 text-white">
-                  <p className="text-xs sm:text-sm font-medium opacity-80">{cat.count} Товаров</p>
+            {categoryBanners.map((cat) => (
+              <button
+                key={cat.name}
+                type="button"
+                onClick={goToProducts}
+                className="group relative aspect-[4/5] rounded-2xl sm:rounded-[30px] overflow-hidden cursor-pointer text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B4B43] focus-visible:ring-offset-2"
+              >
+                <img
+                  src={cat.img}
+                  alt={cat.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  onError={(e) => {
+                    const el = e.currentTarget
+                    if (el.src !== cat.fallback) el.src = cat.fallback
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 sm:p-8 text-white">
+                  <p className="text-xs sm:text-sm font-medium opacity-90">{cat.count} товаров</p>
                   <h3 className="text-lg sm:text-2xl font-bold">{cat.name}</h3>
+                  <p className="mt-2 text-xs sm:text-sm font-medium text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Смотреть каталог →
+                  </p>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -131,9 +173,9 @@ const Home = () => {
               Забота о сложном — моя задача и это просто!
             </p>
 
-            <button className="px-10 py-4 bg-[#1A1A1A] text-white rounded-full font-medium hover:bg-black transition-all">
-              Записаться к Юле
-            </button>
+            <BookAppointmentButton className="inline-block px-10 py-4 bg-[#1A1A1A] text-white rounded-full font-medium hover:bg-black transition-all">
+              Подобрать косметику
+            </BookAppointmentButton>
           </div>
         </div>
       </section>

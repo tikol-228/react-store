@@ -159,51 +159,113 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateQuantity = async (productId: number, quantity: number) => {
+    const previousItems = cartItems;
+
+    const applyLocalQuantity = (qty: number) => {
+      if (qty <= 0) {
+        setCartItems((items) => items.filter((i) => i.product_id !== productId));
+        return;
+      }
+      setCartItems((items) =>
+        items.map((i) =>
+          i.product_id === productId
+            ? { ...i, quantity: Math.min(qty, i.stock_quantity) }
+            : i
+        )
+      );
+    };
+
     if (!user) {
       const lines = readGuestLines();
       const idx = lines.findIndex((l) => l.product_id === productId);
       if (idx < 0) return;
+
       if (quantity <= 0) {
         lines.splice(idx, 1);
-      } else {
+        saveGuestLines(lines);
+        setCartItems(guestLinesToCartItems(lines));
+        return;
+      }
+
+      applyLocalQuantity(quantity);
+
+      try {
         const { data } = await productsAPI.getProduct(productId);
         const p = data.product;
         if (!p || p.stock_quantity < quantity) {
+          setCartItems(previousItems);
           throw new Error('Недостаточно товара на складе');
         }
         lines[idx].quantity = quantity;
         lines[idx].stock_quantity = p.stock_quantity;
+        saveGuestLines(lines);
+        setCartItems(guestLinesToCartItems(lines));
+      } catch (error: unknown) {
+        setCartItems(previousItems);
+        if (error instanceof Error) throw error;
+        throw new Error('Не удалось изменить количество');
       }
-      saveGuestLines(lines);
-      setCartItems(guestLinesToCartItems(lines));
       return;
     }
 
+    if (quantity <= 0) {
+      applyLocalQuantity(0);
+      try {
+        setIsLoading(true);
+        const { data } = await cartAPI.removeFromCart(productId);
+        setCartItems(data.cart || []);
+      } catch (error: unknown) {
+        setCartItems(previousItems);
+        const message =
+          error && typeof error === 'object' && 'response' in error
+            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+            : undefined;
+        throw new Error(message || 'Не удалось удалить товар');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    applyLocalQuantity(quantity);
+
     try {
       setIsLoading(true);
-      await cartAPI.updateCartItem(productId, quantity);
-      await refreshCart();
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to update cart item');
+      const { data } = await cartAPI.updateCartItem(productId, quantity);
+      setCartItems(data.cart || []);
+    } catch (error: unknown) {
+      setCartItems(previousItems);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      throw new Error(message || 'Не удалось изменить количество');
     } finally {
       setIsLoading(false);
     }
   };
 
   const removeFromCart = async (productId: number) => {
+    const previousItems = cartItems;
+    setCartItems((items) => items.filter((i) => i.product_id !== productId));
+
     if (!user) {
       const lines = readGuestLines().filter((l) => l.product_id !== productId);
       saveGuestLines(lines);
-      setCartItems(guestLinesToCartItems(lines));
       return;
     }
 
     try {
       setIsLoading(true);
-      await cartAPI.removeFromCart(productId);
-      await refreshCart();
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to remove item from cart');
+      const { data } = await cartAPI.removeFromCart(productId);
+      setCartItems(data.cart || []);
+    } catch (error: unknown) {
+      setCartItems(previousItems);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      throw new Error(message || 'Не удалось удалить товар');
     } finally {
       setIsLoading(false);
     }

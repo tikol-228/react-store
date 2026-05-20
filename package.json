@@ -4,11 +4,15 @@
   "description": "Full-stack React e-commerce store",
   "scripts": {
     "install-all": "npm install && npm install --prefix server && npm install --prefix my-app",
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
-    "start": "npm run seed --prefix server && concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
+    "postinstall": "npm install --prefix server --omit=dev",
+    "kill-api-port": "sh -c 'lsof -ti :5000 | xargs -r kill -9 2>/dev/null || true'",
+    "dev": "npm run kill-api-port && concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
+    "start": "npm run start --prefix server",
     "install-server": "npm install --prefix server",
     "install-client": "npm install --prefix my-app",
-    "railway": "railway"
+    "railway": "railway",
+    "deploy:web": "railway up --service web --detach",
+    "deploy:api": "cd server && railway up --service api --detach"
   },
   "devDependencies": {
     "@railway/cli": "^4.58.0",

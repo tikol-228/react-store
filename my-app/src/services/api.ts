@@ -4,10 +4,19 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+const PUBLIC_GET_PREFIXES = ['/products', '/categories'];
+
+function isPublicCatalogRequest(url?: string, method?: string) {
+  if (!url || (method || 'get').toLowerCase() !== 'get') return false;
+  const path = url.split('?')[0];
+  return PUBLIC_GET_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -27,10 +36,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isPublicCatalogRequest(error.config?.url, error.config?.method)) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      const path = window.location.pathname;
+      const redirect =
+        path && path !== '/login' && path !== '/register'
+          ? `?redirect=${encodeURIComponent(path)}`
+          : '';
+      window.location.href = `/login${redirect}`;
     }
     return Promise.reject(error);
   }
@@ -72,6 +86,8 @@ export const productsAPI = {
 
 export const categoriesAPI = {
   getCategories: () => api.get('/categories'),
+
+  getBrands: () => api.get('/categories/brands'),
 
   getCategory: (id: number) => api.get(`/categories/${id}`),
 
@@ -146,10 +162,19 @@ export const usersAPI = {
 };
 
 export const contactsAPI = {
-  createContact: (contactData: { name: string; email: string; phone?: string; message: string }) =>
-    api.post('/contacts', contactData),
+  createContact: (contactData: {
+    name: string;
+    email: string;
+    phone?: string;
+    message: string;
+    type?: 'contact' | 'booking';
+  }) => api.post('/contacts', contactData),
 
-  getContacts: () => api.get('/contacts'),
+  createBooking: (data: { name: string; email: string; phone: string; message: string }) =>
+    api.post('/contacts', { ...data, type: 'booking' as const }),
+
+  getContacts: (type?: 'contact' | 'booking') =>
+    api.get('/contacts', type ? { params: { type } } : undefined),
 
   markAsRead: (id: number) => api.patch(`/contacts/${id}/read`),
 

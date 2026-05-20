@@ -9,6 +9,11 @@ export const validateCartItem = [
   body('quantity').isInt({ min: 1 }),
 ];
 
+export const validateCartUpdate = [
+  body('product_id').isInt({ min: 1 }),
+  body('quantity').isInt({ min: 0 }),
+];
+
 // Get user's cart
 export const getCart = asyncHandler(async (req, res) => {
   const cart = await Cart.getUserCart(req.user.id);
@@ -76,7 +81,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 
   // Check stock
   if (product.stock_quantity < quantity) {
-    const error = new Error('Insufficient stock');
+    const error = new Error('Недостаточно товара на складе');
     error.statusCode = 400;
     throw error;
   }

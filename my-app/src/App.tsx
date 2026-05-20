@@ -17,6 +17,7 @@ import InfoPage from './pages/InfoPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
 import { FavoritesProvider } from './contexts/FavoritesContext'
+import { SearchProvider } from './contexts/SearchContext'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <FavoritesProvider>
+          <SearchProvider>
           <Routes>
             {/* Публичные маршруты */}
             <Route path="/" element={<Home />} />
@@ -34,6 +36,7 @@ function App() {
             <Route path="/payment" element={<InfoPage />} />
             <Route path="/delivery" element={<InfoPage />} />
             <Route path="/returns" element={<InfoPage />} />
+            <Route path="/info/:slug" element={<InfoPage />} />
             <Route path="/product/:id" element={<ProductDetails />} />
 
             {/* Защищённые маршруты (для авторизованных пользователей) */}
@@ -76,6 +79,7 @@ function App() {
               }
             />
           </Routes>
+          </SearchProvider>
         </FavoritesProvider>
       </CartProvider>
     </AuthProvider>

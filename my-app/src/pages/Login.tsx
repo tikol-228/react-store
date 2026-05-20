@@ -1,18 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Shield } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, isLoading } = useAuth();
+  const { login, logout, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const fromPath =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/profile';
+  const searchParams = new URLSearchParams(location.search);
+  const redirectPath =
+    searchParams.get('redirect') ||
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+    '/profile';
+  const isAdminLogin = redirectPath === '/admin' || searchParams.get('admin') === '1';
+  const adminDenied = searchParams.get('adminDenied') === '1';
+
+  useEffect(() => {
+    if (adminDenied) {
+      setError('У обычного аккаунта нет доступа к админ-панели. Войдите под учётной записью администратора.');
+    }
+  }, [adminDenied]);
+
+  useEffect(() => {
+    if (!isLoading && user?.role === 'admin' && isAdminLogin) {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, isLoading, isAdminLogin, navigate]);
 
   const getErrorMessage = (errorCode: string) => {
     const errorMessages: { [key: string]: string } = {
@@ -38,7 +55,20 @@ const Login = () => {
       }
       
       await login(email, password);
-      const target = fromPath && fromPath !== '/login' ? fromPath : '/profile';
+      const savedUser = JSON.parse(localStorage.getItem('user') || '{}') as { role?: string };
+
+      if (isAdminLogin && savedUser.role !== 'admin') {
+        await logout();
+        setError(
+          'Этот аккаунт не является администратором. Используйте admin@store.com (или email из ADMIN_EMAIL на сервере). Регистрация на сайте не открывает доступ к /admin.'
+        );
+        return;
+      }
+
+      const target =
+        redirectPath && redirectPath !== '/login' && redirectPath !== '/register'
+          ? redirectPath
+          : '/profile';
       navigate(target, { replace: true });
     } catch (err: any) {
       setError(err?.message || getErrorMessage(err.code || ''));
@@ -64,16 +94,28 @@ const Login = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <h2 className="text-2xl sm:text-4xl font-bold text-[#1A1A1A] mb-1 sm:mb-2">
-            Добро пожаловать!
+            {isAdminLogin ? 'Вход в админ-панель' : 'Добро пожаловать!'}
           </h2>
           <p className="text-sm sm:text-base text-gray-600">
-            Войдите в свой аккаунт
+            {isAdminLogin
+              ? 'Войдите под учётной записью администратора'
+              : 'Войдите в свой аккаунт'}
           </p>
         </div>
       </div>
 
       <div className="mt-6 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-6 sm:py-8 px-4 sm:px-6 shadow-lg border border-gray-100 sm:rounded-2xl sm:px-10 rounded-xl">
+          {isAdminLogin && (
+            <div className="mb-6 p-4 rounded-xl bg-[#1B4B43]/10 border border-[#1B4B43]/20 flex gap-3">
+              <Shield className="w-5 h-5 text-[#1B4B43] shrink-0 mt-0.5" />
+              <p className="text-sm text-gray-700">
+                Доступ к <strong>/admin</strong> только у администратора. Обычная регистрация на сайте
+                не подходит — нужен логин из настроек сервера (например{' '}
+                <code className="text-xs bg-white px-1 rounded">admin@store.com</code>).
+              </p>
+            </div>
+          )}
           <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 p-3 sm:p-4 rounded-lg flex items-start gap-3">
@@ -147,7 +189,7 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Divider */}
+          {!isAdminLogin && (
           <div className="mt-4 sm:mt-6 mb-4 sm:mb-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -158,8 +200,9 @@ const Login = () => {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Sign up link */}
+          {!isAdminLogin && (
           <div className="text-center">
             <p className="text-xs sm:text-sm text-gray-600">
               Нет аккаунта?{' '}
@@ -171,6 +214,7 @@ const Login = () => {
               </Link>
             </p>
           </div>
+          )}
 
           {/* Back to store */}
           <div className="mt-6 pt-6 border-t border-gray-200">

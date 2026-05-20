@@ -1,6 +1,8 @@
 import { body, validationResult } from 'express-validator';
 import { Category } from '../models/Category.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { isAllowedCategoryName } from '../constants/storeCategories.js';
+import { isAllowedBrandName } from '../constants/storeBrands.js';
 
 // Validation rules
 export const validateCategory = [
@@ -10,8 +12,28 @@ export const validateCategory = [
 
 // Get all categories
 export const getCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.findAll();
+  const all = await Category.findAll();
+  const byName = new Map();
+  for (const c of all) {
+    if (!isAllowedCategoryName(c.name)) continue;
+    if (!byName.has(c.name)) byName.set(c.name, c);
+  }
+  const categories = [...byName.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, 'ru')
+  );
   res.json({ categories });
+});
+
+// Get brand categories (stored as categories in DB)
+export const getBrands = asyncHandler(async (req, res) => {
+  const all = await Category.findAll();
+  const byName = new Map();
+  for (const c of all) {
+    if (!isAllowedBrandName(c.name)) continue;
+    if (!byName.has(c.name)) byName.set(c.name, c);
+  }
+  const brands = [...byName.values()].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  res.json({ brands });
 });
 
 // Get single category

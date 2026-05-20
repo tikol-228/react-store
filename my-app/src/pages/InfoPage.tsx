@@ -1,24 +1,35 @@
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { infoPages, type InfoPageSlug } from '../data/infoPages';
-import { ArrowLeft, CreditCard, Truck, RotateCcw } from 'lucide-react';
+import { infoPages, resolveInfoPageSlug, type InfoPageSlug } from '../data/infoPages';
+import {
+  ArrowLeft,
+  CreditCard,
+  Truck,
+  RotateCcw,
+  Shield,
+  FileText,
+  HelpCircle,
+  ShoppingBag,
+  Receipt,
+} from 'lucide-react';
 
 const icons: Record<InfoPageSlug, typeof CreditCard> = {
   payment: CreditCard,
   delivery: Truck,
   returns: RotateCcw,
-};
-
-const pathToSlug: Record<string, InfoPageSlug> = {
-  '/payment': 'payment',
-  '/delivery': 'delivery',
-  '/returns': 'returns',
+  privacy: Shield,
+  terms: FileText,
+  faq: HelpCircle,
+  help: HelpCircle,
+  'how-to-buy': ShoppingBag,
+  taxes: Receipt,
 };
 
 const InfoPage = () => {
   const { pathname } = useLocation();
-  const key = pathToSlug[pathname];
+  const { slug: paramSlug } = useParams<{ slug?: string }>();
+  const key = resolveInfoPageSlug(pathname, paramSlug);
   const page = key ? infoPages[key] : undefined;
 
   if (!page) {

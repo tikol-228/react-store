@@ -5,13 +5,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { navMenu, isNavLink } from '../data/navMenu';
-import { scrollToSection } from '../utils/scrollToSection';
+import {
+  scrollToSection,
+  setProductCategoryFilter,
+  setProductBrandFilter,
+  clearProductCatalogFilters,
+} from '../utils/scrollToSection';
+import { useSearch } from '../contexts/SearchContext';
 import logo from '../icons/logo.jpeg'
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { totalItems } = useCart();
   const { favorites } = useFavorites();
+  const { searchQuery, setSearchQuery, applySearch } = useSearch();
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
@@ -26,16 +33,33 @@ const Header: React.FC = () => {
     setOpenDropdown(null);
   };
 
-  const goToSection = (section: string) => {
+  const goToSection = (section: string, category?: string, brand?: string) => {
     closeMenus();
 
     if (location.pathname === '/') {
-      scrollToSection(section);
+      scrollToSection(section, 'smooth', category ?? null, brand ?? null);
       window.history.replaceState(null, '', `#${section}`);
       return;
     }
 
+    if (brand) {
+      setProductBrandFilter(brand);
+      sessionStorage.removeItem('react-store-product-category');
+    } else if (category) {
+      setProductCategoryFilter(category);
+      sessionStorage.removeItem('react-store-product-brand');
+    } else if (section === 'products') {
+      clearProductCatalogFilters();
+    }
     navigate(`/#${section}`);
+  };
+
+  const goToMenuAll = (item: { section: string; allLabel?: string }) => {
+    if (item.allLabel === 'Все бренды') {
+      goToSection('products');
+      return;
+    }
+    goToSection(item.section);
   };
 
   const toggleMobileMenu = () => {
@@ -50,6 +74,36 @@ const Header: React.FC = () => {
   const toggleDropdown = (name: string) => {
     setOpenDropdown(openDropdown === name ? null : name);
   };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    closeMenus();
+    applySearch();
+  };
+
+  const searchField = (
+    placeholder: string,
+    className: string,
+    iconSize: number
+  ) => (
+    <form onSubmit={handleSearchSubmit} className="relative">
+      <input
+        type="search"
+        placeholder={placeholder}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className={className}
+        aria-label="Поиск товаров"
+      />
+      <button
+        type="submit"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1B4B43] transition-colors"
+        aria-label="Найти"
+      >
+        <Search size={iconSize} />
+      </button>
+    </form>
+  );
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -82,16 +136,12 @@ const Header: React.FC = () => {
           </span>
         </Link>
 
-        <div className="relative w-[300px] lg:w-[450px] hidden lg:block">
-          <input
-            type="text"
-            placeholder="Поиск товаров..."
-            className="w-full rounded-full bg-gray-50 border border-gray-100 py-2.5 pl-4 pr-10 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#1B4B43]/10 focus:border-[#1B4B43] transition-all"
-          />
-          <Search
-            size={18}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+        <div className="w-[300px] lg:w-[450px] hidden lg:block">
+          {searchField(
+            'Поиск товаров...',
+            'w-full rounded-full bg-gray-50 border border-gray-100 py-2.5 pl-4 pr-10 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#1B4B43]/10 focus:border-[#1B4B43] transition-all',
+            18
+          )}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4 text-gray-700">
@@ -193,17 +243,11 @@ const Header: React.FC = () => {
       </div>
 
       <div className="block lg:hidden px-3 pb-3">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Поиск..."
-            className="w-full rounded-full bg-gray-50 border border-gray-100 py-2 pl-4 pr-10 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#1B4B43]/10 focus:border-[#1B4B43] transition-all"
-          />
-          <Search
-            size={16}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-        </div>
+        {searchField(
+          'Поиск товаров...',
+          'w-full rounded-full bg-gray-50 border border-gray-100 py-2 pl-4 pr-10 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#1B4B43]/10 focus:border-[#1B4B43] transition-all',
+          16
+        )}
       </div>
 
       <nav className="w-full border-t border-gray-50 hidden md:block overflow-visible">
@@ -235,34 +279,25 @@ const Header: React.FC = () => {
                       <div className="w-[min(100vw-2rem,22rem)] rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl ring-1 ring-black/5">
                         <button
                           type="button"
-                          onClick={() => goToSection(item.section)}
+                          onClick={() => goToMenuAll(item)}
                           className="mb-1 w-full rounded-xl px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#1B4B43] hover:bg-[#1B4B43]/5 transition-colors"
                         >
-                          Все категории
+                          {item.allLabel ?? 'Показать всё'}
                         </button>
                         <div className="flex flex-col gap-2">
                           {item.children.map((child) => (
                             <button
                               key={child.name}
                               type="button"
-                              onClick={() => goToSection(child.section)}
-                              className="group flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-2 text-left transition-all hover:border-[#1B4B43]/30 hover:bg-gray-50 hover:shadow-md"
+                              onClick={() => goToSection(child.section, child.category, child.brand)}
+                              className="group w-full rounded-xl border border-gray-100 bg-white px-4 py-3 text-left transition-all hover:border-[#1B4B43]/30 hover:bg-gray-50"
                             >
-                              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                                <img
-                                  src={child.image}
-                                  alt={child.name}
-                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#1B4B43]">
-                                  {child.name}
-                                </p>
-                                <p className="mt-0.5 text-xs leading-snug text-gray-500">
-                                  {child.description}
-                                </p>
-                              </div>
+                              <p className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#1B4B43]">
+                                {child.name}
+                              </p>
+                              <p className="mt-0.5 text-xs leading-snug text-gray-500">
+                                {child.description}
+                              </p>
                             </button>
                           ))}
                         </div>
@@ -271,7 +306,7 @@ const Header: React.FC = () => {
                   )}
                 </>
               ) : (
-                <button type="button" onClick={() => goToSection(item.section)} className={navLinkClass}>
+                <button type="button" onClick={() => goToSection(item.section, !isNavLink(item) ? item.category : undefined)} className={navLinkClass}>
                   {item.name}
                 </button>
               )}
@@ -305,32 +340,27 @@ const Header: React.FC = () => {
                     <div className="ml-3 space-y-2 border-l-2 border-[#1B4B43] bg-white py-2 pl-3 pr-1">
                       <button
                         type="button"
-                        onClick={() => goToSection(item.section)}
+                        onClick={() => goToMenuAll(item)}
                         className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#1B4B43] hover:bg-[#1B4B43]/5"
                       >
-                        Все категории
+                        {item.allLabel ?? 'Показать всё'}
                       </button>
                       {item.children.map((child) => (
                         <button
                           key={child.name}
                           type="button"
-                          onClick={() => goToSection(child.section)}
-                          className="group flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white p-2 text-left shadow-sm"
+                          onClick={() => goToSection(child.section, child.category, child.brand)}
+                          className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-left shadow-sm hover:border-[#1B4B43]/30 hover:bg-gray-50"
                         >
-                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                            <img src={child.image} alt={child.name} className="h-full w-full object-cover" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-[#1A1A1A]">{child.name}</p>
-                            <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{child.description}</p>
-                          </div>
+                          <p className="text-sm font-semibold text-[#1A1A1A]">{child.name}</p>
+                          <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{child.description}</p>
                         </button>
                       ))}
                     </div>
                   </div>
                 </>
               ) : (
-                <button type="button" onClick={() => goToSection(item.section)} className={mobileLinkClass}>
+                <button type="button" onClick={() => goToSection(item.section, !isNavLink(item) ? item.category : undefined)} className={mobileLinkClass}>
                   {item.name}
                 </button>
               )}

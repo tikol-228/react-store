@@ -7,12 +7,14 @@
     "postinstall": "npm install --prefix server --omit=dev",
     "kill-api-port": "sh -c 'lsof -ti :5000 | xargs -r kill -9 2>/dev/null || true'",
     "dev": "npm run kill-api-port && concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
-    "start": "npm run start --prefix server",
+    "start": "cd server && node src/server.js",
     "install-server": "npm install --prefix server",
     "install-client": "npm install --prefix my-app",
-    "railway": "railway",
-    "deploy:web": "railway up --service web --detach",
-    "deploy:api": "cd server && railway up --service api --detach"
+    "railway": "npx @railway/cli",
+    "deploy:login": "npx @railway/cli login",
+    "deploy:status": "npx @railway/cli status",
+    "deploy:web": "cd my-app && npx @railway/cli up --service web --detach",
+    "deploy:api": "cd server && npx @railway/cli up --service api --detach"
   },
   "devDependencies": {
     "@railway/cli": "^4.58.0",

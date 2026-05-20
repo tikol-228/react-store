@@ -17,7 +17,7 @@ import contactRoutes from './routes/contacts.js';
 import adminRoutes from './routes/admin.js';
 
 // Import database initialization
-import { initDatabase } from './database/init.js';
+import { initDatabase } from './db/init.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -107,7 +107,7 @@ async function bootstrap() {
   });
 
   try {
-    const { seedDatabase } = await import('./database/seed.js');
+    const { seedDatabase } = await import('./db/seed.js');
     await initDatabase();
     if (process.env.RUN_SEED !== 'false') {
       await seedDatabase();

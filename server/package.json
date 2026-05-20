@@ -8,8 +8,8 @@
     "start": "node src/server.js",
     "railway:build": "npm install",
     "dev": "node --watch src/server.js",
-    "init-db": "node src/database/init.js",
-    "seed": "node src/database/seed.js"
+    "init-db": "node src/db/init.js",
+    "seed": "node src/db/seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

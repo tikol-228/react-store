@@ -605,3 +605,15 @@
 {"level":"info","message":"GET /api/categories 304 - 3ms","service":"react-store-backend","timestamp":"2026-05-20T20:02:13.686Z"}
 {"level":"info","message":"GET /api/categories/brands 304 - 2ms","service":"react-store-backend","timestamp":"2026-05-20T20:02:13.687Z"}
 {"level":"info","message":"GET /api/products?limit=200 304 - 2ms","service":"react-store-backend","timestamp":"2026-05-20T20:02:13.691Z"}
+{"level":"info","message":"GET /api/categories 304 - 2ms","service":"react-store-backend","timestamp":"2026-05-20T20:17:04.626Z"}
+{"level":"info","message":"GET /api/categories/brands 304 - 3ms","service":"react-store-backend","timestamp":"2026-05-20T20:17:04.627Z"}
+{"level":"info","message":"GET /api/products?limit=200 304 - 6ms","service":"react-store-backend","timestamp":"2026-05-20T20:17:04.630Z"}
+{"level":"info","message":"GET /api/categories/brands 304 - 2ms","service":"react-store-backend","timestamp":"2026-05-20T20:17:09.950Z"}
+{"level":"info","message":"GET /api/categories 304 - 3ms","service":"react-store-backend","timestamp":"2026-05-20T20:17:09.951Z"}
+{"level":"info","message":"GET /api/products?limit=200 304 - 6ms","service":"react-store-backend","timestamp":"2026-05-20T20:17:09.953Z"}
+{"level":"info","message":"GET /api/categories/brands 200 - 3ms","service":"react-store-backend","timestamp":"2026-05-20T20:24:14.191Z"}
+{"level":"info","message":"GET /api/products?limit=200 200 - 4ms","service":"react-store-backend","timestamp":"2026-05-20T20:24:14.200Z"}
+{"level":"info","message":"GET /api/categories 200 - 3ms","service":"react-store-backend","timestamp":"2026-05-20T20:24:14.202Z"}
+{"level":"info","message":"GET /api/categories 200 - 5ms","service":"react-store-backend","timestamp":"2026-05-20T20:24:14.204Z"}
+{"level":"info","message":"GET /api/categories/brands 304 - 6ms","service":"react-store-backend","timestamp":"2026-05-20T20:24:14.208Z"}
+{"level":"info","message":"GET /api/products?limit=200 304 - 11ms","service":"react-store-backend","timestamp":"2026-05-20T20:24:14.209Z"}

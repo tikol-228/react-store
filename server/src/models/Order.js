@@ -1,4 +1,4 @@
-import { getDatabase } from '../database/init.js';
+import { getDatabase } from '../db/init.js';
 
 export class Order {
   static async create(orderData) {

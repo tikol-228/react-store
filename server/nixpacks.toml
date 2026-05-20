@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_22", "npm-9_x"]
 
 [phases.install]
-cmds = ["npm ci --omit=dev || npm install --omit=dev"]
+cmds = ["npm ci --omit=dev || npm install --omit=dev", "test -f src/db/init.js"]
 
 [start]
 cmd = "node src/server.js"

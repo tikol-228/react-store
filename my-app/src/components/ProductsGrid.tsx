@@ -1,11 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import ProductCard from '../ui/ProductCard';
 import { productsAPI, categoriesAPI } from '../services/api';
-import { Search, ChevronDown, X } from 'lucide-react';
-import { PRODUCT_BRAND_FILTER_KEY, PRODUCT_CATEGORY_FILTER_KEY } from '../utils/scrollToSection';
+import { Search, X } from 'lucide-react';
+import {
+  PRODUCT_BRAND_FILTER_KEY,
+  PRODUCT_CATEGORY_FILTER_KEY,
+  setProductBrandFilter,
+  setProductCategoryFilter,
+  clearProductCatalogFilters,
+} from '../utils/scrollToSection';
 import { filterStoreCategories } from '../data/storeCategories';
-import { filterStoreBrands } from '../data/storeBrands';
+import { filterStoreBrands, brandNavItems, categoryNavDescriptions } from '../data/storeBrands';
 import { useSearch } from '../contexts/SearchContext';
+import CatalogPageHeader from './catalog/CatalogPageHeader';
+import CatalogSidebar from './catalog/CatalogSidebar';
 
 interface Product {
   id: number;
@@ -28,6 +36,9 @@ interface Category {
   image_url?: string;
 }
 
+const DEFAULT_CATALOG_DESCRIPTION =
+  'Поможем подобрать профессиональный уход под ваш тип кожи. Оставьте заявку — консультант свяжется с вами и подскажет, с чего начать домашний уход.';
+
 const ProductsGrid: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -36,8 +47,6 @@ const ProductsGrid: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('newest');
-  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
-  const [brandMenuOpen, setBrandMenuOpen] = useState(false);
   const [brands, setBrands] = useState<Category[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -94,21 +103,65 @@ const ProductsGrid: React.FC = () => {
     loadData();
   }, []);
 
-  const applyCategoryFilterByName = (categoryName: string) => {
-    const cat = categories.find((c) => c.name === categoryName);
-    if (cat) {
-      setSelectedCategory(cat.id);
-      setSelectedBrand(null);
-    }
+  const scrollToCatalogTop = () => {
+    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const applyBrandFilterByName = (brandName: string) => {
-    const brand = brands.find((b) => b.name === brandName);
-    if (brand) {
-      setSelectedBrand(brand.id);
-      setSelectedCategory(null);
+  const applyCategoryFilterByName = useCallback(
+    (categoryName: string) => {
+      const cat = categories.find((c) => c.name === categoryName);
+      if (cat) {
+        setSelectedCategory(cat.id);
+        setSelectedBrand(null);
+      }
+    },
+    [categories]
+  );
+
+  const applyBrandFilterByName = useCallback(
+    (brandName: string) => {
+      const brand = brands.find((b) => b.name === brandName);
+      if (brand) {
+        setSelectedBrand(brand.id);
+        setSelectedCategory(null);
+      }
+    },
+    [brands]
+  );
+
+  const selectCategory = (id: number | null) => {
+    setSelectedCategory(id);
+    setSelectedBrand(null);
+    if (id) {
+      const name = categories.find((c) => c.id === id)?.name;
+      setProductCategoryFilter(name ?? null);
+      sessionStorage.removeItem(PRODUCT_BRAND_FILTER_KEY);
+    } else {
+      clearProductCatalogFilters();
     }
+    scrollToCatalogTop();
   };
+
+  const selectBrand = (id: number | null) => {
+    setSelectedBrand(id);
+    setSelectedCategory(null);
+    if (id) {
+      const name = brands.find((b) => b.id === id)?.name;
+      setProductBrandFilter(name ?? null);
+      sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
+    } else {
+      clearProductCatalogFilters();
+    }
+    scrollToCatalogTop();
+  };
+
+  const showAllProducts = useCallback(() => {
+    clearSearch();
+    setSelectedCategory(null);
+    setSelectedBrand(null);
+    clearProductCatalogFilters();
+    scrollToCatalogTop();
+  }, [clearSearch]);
 
   useEffect(() => {
     const storedCategory = sessionStorage.getItem(PRODUCT_CATEGORY_FILTER_KEY);
@@ -120,7 +173,7 @@ const ProductsGrid: React.FC = () => {
       applyCategoryFilterByName(storedCategory);
       sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
     }
-  }, [categories, brands]);
+  }, [categories, brands, applyBrandFilterByName, applyCategoryFilterByName]);
 
   useEffect(() => {
     const onFilter = () => {
@@ -139,7 +192,7 @@ const ProductsGrid: React.FC = () => {
     };
     window.addEventListener('product-catalog-filter', onFilter);
     return () => window.removeEventListener('product-catalog-filter', onFilter);
-  }, [categories, brands]);
+  }, [categories, brands, applyBrandFilterByName, applyCategoryFilterByName]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -179,246 +232,175 @@ const ProductsGrid: React.FC = () => {
     return result;
   }, [products, searchQuery, selectedCategory, selectedBrand, sortBy]);
 
+  const activeCategory = categories.find((c) => c.id === selectedCategory);
+  const activeBrand = brands.find((b) => b.id === selectedBrand);
+
+  const pageTitle = useMemo(() => {
+    if (searchQuery && !activeCategory && !activeBrand) return 'Результаты поиска';
+    if (activeBrand) return activeBrand.name;
+    if (activeCategory) return activeCategory.name;
+    return 'Каталог';
+  }, [searchQuery, activeCategory, activeBrand]);
+
+  const pageDescription = useMemo(() => {
+    if (activeCategory) {
+      return (
+        categoryNavDescriptions[activeCategory.name] ||
+        `Товары категории «${activeCategory.name}». ${DEFAULT_CATALOG_DESCRIPTION}`
+      );
+    }
+    if (activeBrand) {
+      const brandInfo = brandNavItems.find((b) => b.name === activeBrand.name);
+      return brandInfo?.description
+        ? `${brandInfo.description}. ${DEFAULT_CATALOG_DESCRIPTION}`
+        : `Косметика бренда ${activeBrand.name}. ${DEFAULT_CATALOG_DESCRIPTION}`;
+    }
+    if (!searchQuery) return DEFAULT_CATALOG_DESCRIPTION;
+    return undefined;
+  }, [activeCategory, activeBrand, searchQuery]);
+
+  const breadcrumbs = useMemo(() => {
+    const items: { label: string; href?: string; onClick?: () => void }[] = [
+      { label: 'Главная', href: '/' },
+      { label: 'Каталог', onClick: showAllProducts },
+    ];
+    if (activeBrand) {
+      items.push({ label: activeBrand.name });
+    } else if (activeCategory) {
+      items.push({ label: activeCategory.name });
+    } else if (searchQuery) {
+      items.push({ label: 'Поиск' });
+    }
+    return items;
+  }, [activeCategory, activeBrand, searchQuery]);
+
   const resetFilters = () => {
     clearSearch();
-    setSelectedCategory(null);
-    setSelectedBrand(null);
+    selectCategory(null);
     setSortBy('newest');
   };
 
-  const hasActiveFilters =
-    Boolean(searchQuery) || selectedCategory !== null || selectedBrand !== null;
+  const totalCount = filteredProducts.length;
+  const displayRange =
+    totalCount === 0 ? 'Товары не найдены' : `Отображение 1–${totalCount} из ${totalCount}`;
 
   return (
-    <section id="products" className="scroll-mt-28 w-full bg-white py-12 sm:py-24">
+    <section id="products" className="scroll-mt-28 w-full bg-white py-10 sm:py-16">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
-        <div className="mb-8 sm:mb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 mb-6 sm:mb-8">
-            <div className="space-y-1 sm:space-y-2">
-              <span className="text-[#D19D6B] font-bold text-xs uppercase tracking-widest">Наша коллекция</span>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-medium text-[#1A1A1A]">Все товары</h2>
-            </div>
-            <div className="text-left sm:text-right">
-              <p className="text-xs sm:text-sm text-gray-500">Найдено товаров:</p>
-              <p className="text-2xl sm:text-3xl font-bold text-[#1B4B43]">{filteredProducts.length}</p>
-            </div>
-          </div>
+        <CatalogPageHeader
+          breadcrumbs={breadcrumbs}
+          title={pageTitle}
+          description={pageDescription}
+        />
 
-          <form
-            className="relative mb-4 sm:mb-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
-            <input
-              type="search"
-              placeholder="Поиск по названию, описанию или категории..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 sm:pl-12 pr-10 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent transition-all"
-              aria-label="Поиск товаров"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => clearSearch()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
-                aria-label="Очистить поиск"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </form>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div
-                className="relative"
-                onMouseEnter={() => setCategoryMenuOpen(true)}
-                onMouseLeave={() => setCategoryMenuOpen(false)}
-              >
-                <button
-                  type="button"
-                  className="px-4 sm:px-6 py-2 sm:py-2.5 border border-gray-200 rounded-full text-xs sm:text-sm font-bold text-[#1A1A1A] hover:bg-gray-50 transition-all flex items-center gap-2"
-                >
-                  {selectedCategory
-                    ? categories.find((c) => c.id === selectedCategory)?.name ?? 'Категории'
-                    : 'Категории'}
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${categoryMenuOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {categoryMenuOpen && (
-                  <div className="absolute left-0 top-full z-40 pt-2 min-w-[220px]">
-                    <div className="rounded-xl border border-gray-200 bg-white py-1 shadow-lg max-h-72 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedCategory(null);
-                          setSelectedBrand(null);
-                        }}
-                        className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 ${
-                          selectedCategory === null
-                            ? 'font-semibold text-[#1B4B43] bg-[#1B4B43]/5'
-                            : 'text-gray-800'
-                        }`}
-                      >
-                        Все категории
-                      </button>
-                      {categories.map((c) => (
-                        <button
-                          type="button"
-                          key={c.id}
-                          onClick={() => {
-                          setSelectedCategory(c.id);
-                          setSelectedBrand(null);
-                        }}
-                          className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 ${
-                            selectedCategory === c.id
-                              ? 'font-semibold text-[#1B4B43] bg-[#1B4B43]/5'
-                              : 'text-gray-800'
-                          }`}
-                        >
-                          {c.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div
-                className="relative"
-                onMouseEnter={() => setBrandMenuOpen(true)}
-                onMouseLeave={() => setBrandMenuOpen(false)}
-              >
-                <button
-                  type="button"
-                  className="px-4 sm:px-6 py-2 sm:py-2.5 border border-gray-200 rounded-full text-xs sm:text-sm font-bold text-[#1A1A1A] hover:bg-gray-50 transition-all flex items-center gap-2"
-                >
-                  {selectedBrand
-                    ? brands.find((b) => b.id === selectedBrand)?.name ?? 'Бренды'
-                    : 'Бренды'}
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${brandMenuOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {brandMenuOpen && (
-                  <div className="absolute left-0 top-full z-40 pt-2 min-w-[240px]">
-                    <div className="rounded-xl border border-gray-200 bg-white py-1 shadow-lg max-h-72 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedBrand(null);
-                          setSelectedCategory(null);
-                        }}
-                        className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 ${
-                          selectedBrand === null
-                            ? 'font-semibold text-[#1B4B43] bg-[#1B4B43]/5'
-                            : 'text-gray-800'
-                        }`}
-                      >
-                        Все бренды
-                      </button>
-                      {brands.map((b) => (
-                        <button
-                          type="button"
-                          key={b.id}
-                          onClick={() => {
-                            setSelectedBrand(b.id);
-                            setSelectedCategory(null);
-                          }}
-                          className={`block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 ${
-                            selectedBrand === b.id
-                              ? 'font-semibold text-[#1B4B43] bg-[#1B4B43]/5'
-                              : 'text-gray-800'
-                          }`}
-                        >
-                          {b.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-[#1B4B43] hover:text-[#2a6b5f] flex items-center gap-2 transition-colors"
-                >
-                  Очистить
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-4 text-sm sm:text-base">
-              <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">Сортировка:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white border border-gray-200 rounded-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-[#1A1A1A] outline-none cursor-pointer hover:border-gray-300 transition-all flex-1 sm:flex-none"
-              >
-                <option value="newest">Сначала новые</option>
-                <option value="price-low">Цена: по возрастанию</option>
-                <option value="price-high">Цена: по убыванию</option>
-                <option value="name">По названию</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center items-center min-h-[320px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B4B43]" />
-          </div>
-        ) : loadError ? (
-          <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
-            <p className="text-gray-600 mb-4 max-w-md">{loadError}</p>
+        <form
+          className="relative mb-8 max-w-xl"
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+          <input
+            type="search"
+            placeholder="Поиск по названию, описанию или категории..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43]/20 focus:border-[#1B4B43]"
+            aria-label="Поиск товаров"
+          />
+          {searchQuery && (
             <button
               type="button"
-              onClick={loadData}
-              className="px-6 py-3 bg-[#1B4B43] text-white rounded-full font-bold hover:bg-[#2a6b5f] transition-all"
+              onClick={() => clearSearch()}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+              aria-label="Очистить поиск"
             >
-              Повторить
+              <X className="w-4 h-4" />
             </button>
-          </div>
-        ) : filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
-            {filteredProducts.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={{
-                  id: p.id,
-                  name: p.name,
-                  price: p.price,
-                  image_url: p.image_url,
-                  category_name: p.category_name,
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 sm:py-24">
-            <div className="text-center space-y-4">
-              <div className="text-4xl sm:text-5xl">🔍</div>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">Товары не найдены</h3>
-              <p className="text-sm sm:text-base text-gray-600 max-w-md px-4">
-                Попробуйте изменить параметры поиска или фильтры
-              </p>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="mt-4 px-6 py-3 bg-[#1B4B43] text-white rounded-full font-bold hover:bg-[#2a6b5f] transition-all text-sm sm:text-base"
-              >
-                Очистить фильтры
-              </button>
+          )}
+        </form>
+
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+          <div className="flex-1 min-w-0 order-2 lg:order-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
+              <p className="text-sm text-gray-600">{displayRange}</p>
+              <div className="flex items-center gap-2">
+                <label htmlFor="catalog-sort" className="text-sm text-gray-500 whitespace-nowrap">
+                  Сортировка:
+                </label>
+                <select
+                  id="catalog-sort"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#1A1A1A] outline-none cursor-pointer hover:border-gray-300 min-w-[180px]"
+                >
+                  <option value="newest">По новизне</option>
+                  <option value="price-low">Цена: по возрастанию</option>
+                  <option value="price-high">Цена: по убыванию</option>
+                  <option value="name">По названию</option>
+                </select>
+              </div>
             </div>
+
+            {loading ? (
+              <div className="flex justify-center items-center min-h-[320px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B4B43]" />
+              </div>
+            ) : loadError ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-gray-600 mb-4 max-w-md">{loadError}</p>
+                <button
+                  type="button"
+                  onClick={loadData}
+                  className="px-6 py-3 bg-[#1B4B43] text-white rounded-full font-bold hover:bg-[#2a6b5f] transition-all"
+                >
+                  Повторить
+                </button>
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+                {filteredProducts.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={{
+                      id: p.id,
+                      name: p.name,
+                      price: p.price,
+                      image_url: p.image_url,
+                      category_name: p.category_name,
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 sm:py-20">
+                <div className="text-center space-y-4">
+                  <div className="text-4xl">🔍</div>
+                  <h3 className="text-xl font-bold text-[#1A1A1A]">Товары не найдены</h3>
+                  <p className="text-sm text-gray-600 max-w-md">
+                    Попробуйте другую категорию, бренд или измените поиск
+                  </p>
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="mt-2 px-6 py-3 bg-[#1B4B43] text-white rounded-full font-bold hover:bg-[#2a6b5f] transition-all text-sm"
+                  >
+                    Показать весь каталог
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          <div className="order-1 lg:order-2">
+            <CatalogSidebar
+              categories={categories}
+              brands={brands}
+              selectedCategoryId={selectedCategory}
+              selectedBrandId={selectedBrand}
+              onSelectCategory={selectCategory}
+              onSelectBrand={selectBrand}
+            />
+          </div>
+        </div>
       </div>
     </section>
   );

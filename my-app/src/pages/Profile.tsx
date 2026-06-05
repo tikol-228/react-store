@@ -3,7 +3,8 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Mail, Phone, Lock, User, LogOut, Edit2, Save, X, AlertCircle } from 'lucide-react';
+import { Mail, Phone, User, LogOut, Edit2, Save, X, AlertCircle } from 'lucide-react';
+import { companyInfo } from '../data/company';
 
 const Profile: React.FC = () => {
   const { user, logout, updateProfile } = useAuth();
@@ -11,17 +12,10 @@ const Profile: React.FC = () => {
   const location = useLocation();
 
   const [isEditing, isSetEditing] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     phone: '',
-  });
-
-  const [passwordData, setPasswordData] = useState({
-    newPassword: '',
-    confirmPassword: '',
   });
 
   const [error, setError] = useState('');
@@ -82,26 +76,6 @@ const Profile: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('Новые пароли не совпадают');
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      setError('Новый пароль должен быть минимум 6 символов');
-      return;
-    }
-
-    setError('Смена пароля через это приложение пока не поддерживается (нет API).');
-    setIsChangingPassword(false);
-    setPasswordData({ newPassword: '', confirmPassword: '' });
   };
 
   return (
@@ -297,71 +271,25 @@ const Profile: React.FC = () => {
             <div className="bg-white rounded-2xl p-8 border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Безопасность</h2>
-                {!isChangingPassword && (
-                  <button
-                    type="button"
-                    onClick={() => setIsChangingPassword(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-semibold"
-                  >
-                    <Lock className="w-4 h-4" />
-                    Изменить пароль
-                  </button>
-                )}
               </div>
 
-              {isChangingPassword ? (
-                <form onSubmit={handlePasswordChange} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Новый пароль</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                      <input
-                        type="password"
-                        value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                        placeholder="Введите новый пароль"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Подтвердите пароль</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                      <input
-                        type="password"
-                        value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                        placeholder="Повторите пароль"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="submit"
-                      className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-                    >
-                      Отправить
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsChangingPassword(false)}
-                      className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-                    >
-                      <X className="w-5 h-5" />
-                      Отмена
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg">
-                  <p className="text-gray-600 mb-4">Пароль хранится на сервере в зашифрованном виде.</p>
-                  <p className="text-xs text-gray-500">Смена пароля через API в этой версии не подключена.</p>
-                </div>
-              )}
+              <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg">
+                <p className="text-gray-600 mb-4">Пароль хранится на сервере в зашифрованном виде.</p>
+                <p className="text-sm text-gray-500">
+                  Чтобы сменить пароль, напишите на{' '}
+                  <a
+                    href={`mailto:${companyInfo.emails.primary}`}
+                    className="text-[#1B4B43] font-medium hover:underline"
+                  >
+                    почту поддержки
+                  </a>{' '}
+                  или воспользуйтесь разделом{' '}
+                  <Link to="/contacts" className="text-[#1B4B43] font-medium hover:underline">
+                    Контакты
+                  </Link>
+                  .
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ordersAPI } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Truck, CreditCard, Loader } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 
@@ -56,15 +57,49 @@ const Checkout: React.FC = () => {
         }))
       };
 
-      // Create order
-      await ordersAPI.createOrder(orderData);
+      const paymentNote =
+        formData.paymentMethod === 'card'
+          ? 'Оплата: банковская карта (онлайн)'
+          : 'Оплата: наличными при получении';
 
-      // Clear cart
+      const response = await ordersAPI.createOrder({
+        ...orderData,
+        comment: [formData.comment, paymentNote].filter(Boolean).join('\n'),
+      });
+
+      const created = response.data.order;
+      const successOrder = {
+        id: created?.id ?? Date.now(),
+        date: new Date().toLocaleDateString('ru-RU', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+        total: created?.total_amount ?? totalPrice,
+        customer: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          email: formData.email,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          paymentMethod: formData.paymentMethod,
+        },
+        items: cartItems.map((item) => ({
+          id: item.product_id,
+          title: item.name,
+          category: '',
+          image: item.image_url || '/placeholder-product.jpg',
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      };
+
       await clearCart();
       await refreshCart();
 
-      // Navigate to success page
-      navigate('/success');
+      navigate('/success', { state: { order: successOrder } });
     } catch (error: any) {
       console.error('Failed to create order:', error);
       alert(error.response?.data?.message || 'Failed to create order');
@@ -225,10 +260,27 @@ const Checkout: React.FC = () => {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="card">Банковская карта</option>
+                  <option value="card">Банковская карта (онлайн)</option>
                   <option value="cash">Наличными при получении</option>
                 </select>
               </div>
+
+              {formData.paymentMethod === 'card' && (
+                <div className="content-text rounded-lg border border-[#1B4B43]/20 bg-[#1B4B43]/5 p-4">
+                  <p className="text-sm font-medium text-gray-900 mb-2">Оплата онлайн</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    После оформления заказа оплата проходит в режиме реального времени. Принимаются
+                    Visa, MasterCard, Белкарт, Apple Pay, Samsung Pay. Платежи обрабатывает ЗАО «БСБ
+                    БАНК».
+                  </p>
+                  <Link
+                    to="/payment"
+                    className="inline-block mt-2 text-sm font-medium text-[#1B4B43] hover:underline"
+                  >
+                    Подробнее об оплате
+                  </Link>
+                </div>
+              )}
 
               {/* Comment */}
               <div>
@@ -304,7 +356,7 @@ const Checkout: React.FC = () => {
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <CreditCard size={20} className="text-purple-600" />
-                <span>Гарантия возврата</span>
+                <span>Проверка заказа при получении</span>
               </div>
             </div>
           </div>

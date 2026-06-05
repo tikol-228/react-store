@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Sun, ShoppingBag, User, ChevronDown, Menu, X, Heart, Package, LogOut, Settings } from "lucide-react";
+import { Search, ShoppingBag, User, ChevronDown, Menu, X, Heart, Package, LogOut, Settings } from "lucide-react";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -9,7 +9,9 @@ import {
   scrollToSection,
   setProductCategoryFilter,
   setProductBrandFilter,
+  setProductCareTypeFilter,
   clearProductCatalogFilters,
+  type ProductCareTypeFilter,
 } from '../utils/scrollToSection';
 import { useSearch } from '../contexts/SearchContext';
 import logo from '../icons/logo.jpeg'
@@ -33,11 +35,16 @@ const Header: React.FC = () => {
     setOpenDropdown(null);
   };
 
-  const goToSection = (section: string, category?: string, brand?: string) => {
+  const goToSection = (
+    section: string,
+    category?: string,
+    brand?: string,
+    careType?: ProductCareTypeFilter
+  ) => {
     closeMenus();
 
     if (location.pathname === '/') {
-      scrollToSection(section, 'smooth', category ?? null, brand ?? null);
+      scrollToSection(section, 'smooth', category ?? null, brand ?? null, careType ?? null);
       window.history.replaceState(null, '', `#${section}`);
       return;
     }
@@ -45,8 +52,14 @@ const Header: React.FC = () => {
     if (brand) {
       setProductBrandFilter(brand);
       sessionStorage.removeItem('react-store-product-category');
+      sessionStorage.removeItem('react-store-product-care-type');
     } else if (category) {
       setProductCategoryFilter(category);
+      sessionStorage.removeItem('react-store-product-brand');
+      sessionStorage.removeItem('react-store-product-care-type');
+    } else if (careType) {
+      setProductCareTypeFilter(careType);
+      sessionStorage.removeItem('react-store-product-category');
       sessionStorage.removeItem('react-store-product-brand');
     } else if (section === 'products') {
       clearProductCatalogFilters();
@@ -54,11 +67,7 @@ const Header: React.FC = () => {
     navigate(`/#${section}`);
   };
 
-  const goToMenuAll = (item: { section: string; allLabel?: string }) => {
-    if (item.allLabel === 'Все бренды') {
-      goToSection('products');
-      return;
-    }
+  const goToMenuAll = (item: { section: string }) => {
     goToSection(item.section);
   };
 
@@ -145,10 +154,6 @@ const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4 text-gray-700">
-          <button className="p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:block" type="button">
-            <Sun size={20} className="text-gray-500" />
-          </button>
-          
           <Link to="/favorites" className="p-2 hover:bg-gray-50 rounded-full transition-colors relative group">
             <Heart size={20} className="text-gray-500 group-hover:text-red-500" />
             {favorites.length > 0 && (
@@ -187,55 +192,77 @@ const Header: React.FC = () => {
 
             {userMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="font-bold text-[#1A1A1A]">
-                    {user ? `${user.first_name} ${user.last_name}`.trim() : ''}
-                  </p>
-                  <p className="text-sm text-gray-500">{user?.email}</p>
-                </div>
-                
-                <div className="py-1">
-                  <Link
-                    to="/profile"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
-                  >
-                    <Settings size={16} />
-                    Профиль
-                  </Link>
-                  
-                  <Link
-                    to="/orders"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
-                  >
-                    <Package size={16} />
-                    Мои заказы
-                  </Link>
-                  
-                  <Link
-                    to="/favorites"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
-                  >
-                    <Heart size={16} />
-                    Избранное ({favorites.length})
-                  </Link>
-                </div>
-                
-                <div className="border-t border-gray-100 pt-1">
-                  <button
-                    onClick={() => {
-                      logout();
-                      setUserMenuOpen(false);
-                    }}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
-                    type="button"
-                  >
-                    <LogOut size={16} />
-                    Выйти
-                  </button>
-                </div>
+                {user ? (
+                  <>
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="font-bold text-[#1A1A1A]">
+                        {`${user.first_name} ${user.last_name}`.trim()}
+                      </p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        to="/profile"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
+                      >
+                        <Settings size={16} />
+                        Профиль
+                      </Link>
+
+                      <Link
+                        to="/orders"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
+                      >
+                        <Package size={16} />
+                        Мои заказы
+                      </Link>
+
+                      <Link
+                        to="/favorites"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1B4B43] transition-colors"
+                      >
+                        <Heart size={16} />
+                        Избранное ({favorites.length})
+                      </Link>
+                    </div>
+
+                    <div className="border-t border-gray-100 pt-1">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setUserMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
+                        type="button"
+                      >
+                        <LogOut size={16} />
+                        Выйти
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-1">
+                    <Link
+                      to="/login"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#1B4B43] hover:bg-gray-50 transition-colors"
+                    >
+                      <User size={16} />
+                      Войти
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Регистрация
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -289,7 +316,9 @@ const Header: React.FC = () => {
                             <button
                               key={child.name}
                               type="button"
-                              onClick={() => goToSection(child.section, child.category, child.brand)}
+                              onClick={() =>
+                                goToSection(child.section, child.category, child.brand)
+                              }
                               className="group w-full rounded-xl border border-gray-100 bg-white px-4 py-3 text-left transition-all hover:border-[#1B4B43]/30 hover:bg-gray-50"
                             >
                               <p className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#1B4B43]">
@@ -306,7 +335,18 @@ const Header: React.FC = () => {
                   )}
                 </>
               ) : (
-                <button type="button" onClick={() => goToSection(item.section, !isNavLink(item) ? item.category : undefined)} className={navLinkClass}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    goToSection(
+                      item.section,
+                      !isNavLink(item) ? item.category : undefined,
+                      undefined,
+                      !isNavLink(item) ? item.careType : undefined
+                    )
+                  }
+                  className={navLinkClass}
+                >
                   {item.name}
                 </button>
               )}
@@ -360,7 +400,18 @@ const Header: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <button type="button" onClick={() => goToSection(item.section, !isNavLink(item) ? item.category : undefined)} className={mobileLinkClass}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    goToSection(
+                      item.section,
+                      !isNavLink(item) ? item.category : undefined,
+                      undefined,
+                      !isNavLink(item) ? item.careType : undefined
+                    )
+                  }
+                  className={mobileLinkClass}
+                >
                   {item.name}
                 </button>
               )}

@@ -1,19 +1,13 @@
 /**
- * Форматирует цену в беларусские рубли (BYN)
- * @param price - Числовое значение цены
- * @param decimals - Количество знаков после запятой (по умолчанию 2)
- * @returns Форматированная строка с символом BYN
+ * Форматирует цену в белорусские рубли
  */
 export const formatPrice = (price: number, decimals: number = 2): string => {
-  return `Br ${price.toFixed(decimals)}`;
+  return `${price.toFixed(decimals)} руб.`;
 };
 
 /**
- * Форматирует цену с символом BYN в конце
- * @param price - Числовое значение цены
- * @param decimals - Количество знаков после запятой (по умолчанию 2)
- * @returns Форматированная строка вида "X.XX Br"
+ * То же, что formatPrice (символ в конце)
  */
 export const formatPriceWithSymbol = (price: number, decimals: number = 2): string => {
-  return `${price.toFixed(decimals)} Br`;
+  return `${price.toFixed(decimals)} руб.`;
 };

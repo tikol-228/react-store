@@ -11,7 +11,6 @@ type ProductCardProps = {
     name: string;
     category_name?: string;
     price: number;
-    rating?: number;
     image_url?: string;
   };
 };
@@ -42,7 +41,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         title: product.name,
         category: product.category_name || 'Категория',
         price: product.price,
-        rating: product.rating ?? 4.5,
         image: product.image_url || '/placeholder-product.jpg',
       });
     }
@@ -77,15 +75,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
 
       <div className="flex flex-col gap-1 px-1">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-[#A0A0A0] uppercase tracking-wider font-medium">
-            {product.category_name || 'Категория'}
-          </span>
-          <div className="flex items-center gap-1">
-            <span className="text-orange-400 text-xs">★</span>
-            <span className="text-[11px] font-bold text-black">{(product.rating ?? 4.5).toFixed(1)}</span>
-          </div>
-        </div>
+        <span className="text-[11px] text-[#A0A0A0] uppercase tracking-wider font-medium">
+          {product.category_name || 'Категория'}
+        </span>
 
         <h3 className="text-[14px] font-medium text-[#1A1A1A] leading-snug min-h-[40px] group-hover:text-[#1B4B43] transition-colors">
           {product.name}

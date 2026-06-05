@@ -203,4 +203,8 @@ export const adminAPI = {
     user_id?: number | null;
     items: Array<{ product_id: number; quantity: number; price?: number }>;
   }) => api.post('/admin/orders', orderData),
+
+  seedDemoOrders: () => api.post('/admin/seed-demo-orders'),
+
+  clearDemoOrders: () => api.delete('/admin/demo-orders'),
 };

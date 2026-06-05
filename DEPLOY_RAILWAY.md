@@ -24,8 +24,9 @@ railway init
 ## 3. Сервис **api** (бэкенд)
 
 1. В Railway: **New Service** → **GitHub Repo** (или Empty + `railway up` из `server/`).
-2. **Settings → Root Directory:** `server` (обязательно; иначе пути вида `/app/server/...` и падение `init.js`)
-3. **Settings → Start Command:** `node src/server.js` (или пусто — возьмётся из `server/railway.toml`)
+2. **Settings → Root Directory:** `server` (обязательно; иначе Railpack не найдёт `start` и упадёт сборка)
+3. **Settings → Config file (если есть поле):** `/server/railway.toml` — путь от корня репо, не от Root Directory
+4. **Settings → Start Command:** `node src/server.js` (или пусто — из `server/railway.toml` / `server/railpack.json`)
 4. **Settings → Networking:** Generate Domain (публичный URL API).
 5. **Variables:**
 
@@ -51,8 +52,10 @@ railway init
 ## 4. Сервис **web** (фронт)
 
 1. **New Service** в том же проекте.
-2. **Root Directory:** `my-app`
-3. **Variables** (нужны на этапе **build**):
+2. **Root Directory:** `my-app` (обязательно; иначе `No start command detected` или на сайте `Route not found`)
+3. **Settings → Config file (если есть поле):** `/my-app/railway.toml`
+4. **Start Command:** `npx serve dist -s -l $PORT` (или пусто — из `my-app/railway.toml` / `my-app/railpack.json`)
+4. **Variables** (нужны на этапе **build**):
 
 | Переменная | Значение |
 |------------|----------|
@@ -64,8 +67,8 @@ railway init
 VITE_API_URL=https://${{api.RAILWAY_PUBLIC_DOMAIN}}/api
 ```
 
-4. **Networking:** Generate Domain для фронта.
-5. Вернитесь в сервис **api** и обновите `FRONTEND_URL` на URL фронта → **Redeploy api**.
+5. **Networking:** Generate Domain для фронта.
+6. Вернитесь в сервис **api** и обновите `FRONTEND_URL` на URL фронта → **Redeploy api**.
 
 ## 5. Деплой из CLI (без GitHub)
 
@@ -103,9 +106,11 @@ sqlite3 server/database/store.db "SELECT COUNT(*) FROM products;"
 
 | Проблема | Решение |
 |----------|---------|
+| `No start command detected` | В корне есть `start`/`build`. Для **api** из корня: переменная `RAILWAY_ROOT_APP=server`. Лучше: Root Directory `my-app` (web) или `server` (api) |
 | `Cannot find package 'bcryptjs'` | Сервис **api** должен иметь **Root Directory = `server`**, Start: `node src/server.js`. Не деплойте API из корня с dev-скриптом `concurrently`. |
 | CORS / 502 на login | API не запущен — смотрите логи api. После фикса деплоя: `FRONTEND_URL=https://web-production-acff8.up.railway.app` |
 | `Cannot find module .../database/init.js` | Старый деплой или Root Directory api = корень репо. Код БД в `server/src/db/`. Лучше: Root Directory = `server`, Start = `node src/server.js`. Передеплой: `npm run deploy:api` |
+| Сайт показывает `{"message":"Route not found"}` | Сервис **web** запускает API. Root Directory web = `my-app`, Start = `npx serve dist -s -l $PORT`. Не используйте `railway.toml` в корне репо. Redeploy web |
 | CORS error | `FRONTEND_URL` = точный URL web (без `/` в конце) |
 | Пустой каталог | Перезапустить api (seed), проверить volume |
 | API 404 на фронте | Пересобрать web с правильным `VITE_API_URL` |
@@ -127,5 +132,6 @@ sqlite3 server/database/store.db "SELECT COUNT(*) FROM products;"
 - файлы `.railwayignore` исключают `node_modules`, `dist`, БД и логи
 
 Повторите деплой при стабильном интернете (без VPN, если он режет upload). Альтернатива — деплой из GitHub в Dashboard Railway (Settings → Connect Repo).
+
 | Start Command | `node src/server.js` |
 | Healthcheck | `/api/health` |

@@ -143,6 +143,7 @@ export const initDatabase = async () => {
   `);
 
   await migrateContactsTable(db);
+  await migrateProductsTable(db);
 
   console.log('Database initialized successfully');
   return db;
@@ -155,6 +156,25 @@ async function migrateContactsTable(db) {
     await db.run(`ALTER TABLE contacts ADD COLUMN type TEXT DEFAULT 'contact'`);
     await db.run(`UPDATE contacts SET type = 'contact' WHERE type IS NULL`);
   }
+}
+
+async function migrateProductsTable(db) {
+  const columns = await db.all('PRAGMA table_info(products)');
+  if (!columns.some((col) => col.name === 'brand_id')) {
+    await db.run(
+      'ALTER TABLE products ADD COLUMN brand_id INTEGER REFERENCES categories(id) ON DELETE SET NULL'
+    );
+  }
+  if (!columns.some((col) => col.name === 'care_type')) {
+    await db.run(
+      "ALTER TABLE products ADD COLUMN care_type TEXT CHECK (care_type IN ('home', 'professional'))"
+    );
+  }
+  if (!columns.some((col) => col.name === 'skin_type')) {
+    await db.run('ALTER TABLE products ADD COLUMN skin_type TEXT');
+  }
+  await db.run('CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand_id)');
+  await db.run('CREATE INDEX IF NOT EXISTS idx_products_skin_type ON products(skin_type)');
 }
 
 // Get database instance

@@ -6,6 +6,8 @@ import {
   markNotificationAsRead,
   deleteNotification,
   createAdminOrder,
+  createDemoOrders,
+  removeDemoOrders,
   getPanelAuthStatus,
   verifyPanelPin,
 } from '../controllers/adminController.js';
@@ -30,5 +32,8 @@ router.post(
   [...validateOrder, body('user_id').optional({ nullable: true }).isInt({ min: 1 })],
   createAdminOrder
 );
+
+router.post('/seed-demo-orders', authenticate, requireAdmin, createDemoOrders);
+router.delete('/demo-orders', authenticate, requireAdmin, removeDemoOrders);
 
 export default router;

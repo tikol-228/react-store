@@ -2,10 +2,7 @@
 export const STORE_CATEGORY_NAMES = [
   'Уход за лицом',
   'Уход за телом',
-  'Сыворотки',
-  'Маски для лица',
-  'Лосьоны для тела',
-  'Скрабы для тела',
+  'Средства SPF',
   'Наборы',
 ] as const;
 
@@ -14,6 +11,10 @@ export const LEGACY_CATEGORY_NAMES = [
   'Clothing',
   'Electronics',
   'Home & Garden',
+  'Сыворотки',
+  'Маски для лица',
+  'Лосьоны для тела',
+  'Скрабы для тела',
 ] as const;
 
 export type StoreCategoryName = (typeof STORE_CATEGORY_NAMES)[number];

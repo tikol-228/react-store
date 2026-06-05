@@ -65,7 +65,7 @@ const BookingSection = () => {
     <section id="booking" className="scroll-mt-28">
       <div className="bg-[#F3F4F0] rounded-2xl sm:rounded-3xl p-6 sm:p-10 border border-[#1B4B43]/10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          <div>
+          <div className="content-text">
             <span className="text-[#D19D6B] font-bold text-xs uppercase tracking-widest">
               Подбор косметики
             </span>
@@ -77,11 +77,11 @@ const BookingSection = () => {
               каталога профессиональной косметики.
             </p>
             <a
-              href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}
+              href={`tel:${companyInfo.phoneTel}`}
               className="inline-flex items-center gap-3 px-6 py-3 bg-[#1B4B43] text-white rounded-full font-semibold hover:bg-[#2a6b5f] transition-colors"
             >
               <Phone size={20} />
-              Позвонить: {companyInfo.phone}
+              Позвонить: {companyInfo.phoneDisplay}
             </a>
           </div>
 

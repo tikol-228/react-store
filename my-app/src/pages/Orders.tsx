@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ordersAPI } from '../services/api';
-import { Package, Clock, CheckCircle, XCircle, Truck, MapPin, CreditCard } from 'lucide-react';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { Package, Clock, CheckCircle, XCircle, Truck, MapPin, CreditCard, ShoppingBag } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
+import { goToProductsCatalog } from '../utils/scrollToSection';
 
 interface OrderItem {
   product_name: string;
@@ -102,18 +105,23 @@ const Orders: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1B4B43]/20 border-t-[#1B4B43] rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Загрузка заказов...</p>
+      <div className="min-h-screen bg-[#FAF9F6]">
+        <Header />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#1B4B43]/20 border-t-[#1B4B43] rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500">Загрузка заказов...</p>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#FAF9F6]">
+      <Header />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-[#1A1A1A] mb-2">Мои заказы</h1>
@@ -124,7 +132,15 @@ const Orders: React.FC = () => {
           <div className="text-center py-20">
             <Package size={40} className="mx-auto text-gray-300 mb-4" />
             <h2 className="text-xl font-bold text-gray-600 mb-2">У вас пока нет заказов</h2>
-            <p className="text-gray-400">Когда вы совершите покупку, она появится здесь</p>
+            <p className="text-gray-400 mb-6">Когда вы совершите покупку, она появится здесь</p>
+            <button
+              type="button"
+              onClick={() => goToProductsCatalog()}
+              className="inline-flex items-center gap-2 bg-[#1B4B43] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#2a6b5f] transition-all"
+            >
+              <ShoppingBag size={18} />
+              Перейти в каталог
+            </button>
           </div>
         ) : (
           <div className="space-y-6">
@@ -204,7 +220,8 @@ const Orders: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 };

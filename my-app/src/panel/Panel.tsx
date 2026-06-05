@@ -2,9 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { adminAPI, productsAPI, ordersAPI, usersAPI, categoriesAPI, contactsAPI } from '../services/api';
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Trash2, CheckCircle, Users, Loader, Calendar, AlertCircle } from 'lucide-react';
+import { Package, ShoppingBag, Trash2, CheckCircle, Users, Loader, Calendar, AlertCircle, Pencil } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { filterStoreCategories } from '../data/storeCategories';
+import { filterStoreBrands } from '../data/storeBrands';
+import { CARE_TYPE_OPTIONS, careTypeLabel, type ProductCareType } from '../data/productCareTypes';
+import {
+  SKIN_TYPE_OPTIONS,
+  parseSkinTypes,
+  serializeSkinTypes,
+  skinTypesLabel,
+  type ProductSkinType,
+} from '../data/productSkinTypes';
 import CategorySelect from '../components/CategorySelect';
 
 interface Product {
@@ -14,12 +23,28 @@ interface Product {
   price: number;
   image_url?: string;
   category_id?: number;
+  brand_id?: number;
+  care_type?: ProductCareType | string;
+  skin_type?: ProductSkinType | string;
   stock_quantity: number;
   is_active: number;
   created_at: string;
   updated_at: string;
   category_name?: string;
+  brand_name?: string;
 }
+
+const emptyProductForm = {
+  name: '',
+  description: '',
+  price: 0,
+  category_id: '',
+  brand_id: '',
+  care_type: '' as '' | ProductCareType,
+  skin_types: [] as ProductSkinType[],
+  stock_quantity: 0,
+  image_url: '',
+};
 
 interface Order {
   id: number;
@@ -77,6 +102,8 @@ const Panel: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<ContactRecord[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [brands, setBrands] = useState<{ id: number; name: string }[]>([]);
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
   const [adminNewOrder, setAdminNewOrder] = useState({
     customer_name: '',
@@ -89,15 +116,7 @@ const Panel: React.FC = () => {
     quantity: 1,
   });
 
-  // New product form
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    category_id: '',
-    stock_quantity: 0,
-    image_url: '',
-  });
+  const [newProduct, setNewProduct] = useState({ ...emptyProductForm });
 
   const [productImagePreview, setProductImagePreview] = useState<string>('');
 
@@ -110,12 +129,14 @@ const Panel: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsRes, productsRes, ordersRes, usersRes, categoriesRes, bookingsRes] = await Promise.all([
+      const [statsRes, productsRes, ordersRes, usersRes, categoriesRes, brandsRes, bookingsRes] =
+        await Promise.all([
         adminAPI.getDashboardStats(),
         productsAPI.getProducts({ limit: 200 }),
         ordersAPI.getOrders({ limit: 50 }),
         usersAPI.getUsers(),
         categoriesAPI.getCategories(),
+        categoriesAPI.getBrands(),
         contactsAPI.getContacts('booking'),
       ]);
 
@@ -125,6 +146,7 @@ const Panel: React.FC = () => {
       setUsers(usersRes.data.users || []);
       setBookings(bookingsRes.data.contacts || []);
       setCategories(filterStoreCategories(categoriesRes.data.categories || []));
+      setBrands(filterStoreBrands(brandsRes.data.brands || []));
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -180,42 +202,89 @@ const Panel: React.FC = () => {
     }
   };
 
+  const resetProductForm = () => {
+    setNewProduct({ ...emptyProductForm });
+    setProductImagePreview('');
+    setEditingProductId(null);
+  };
+
+  const buildProductPayload = () => {
+    const categoryId = parseInt(String(newProduct.category_id), 10);
+    const brandId = parseInt(String(newProduct.brand_id), 10);
+    return {
+      name: newProduct.name.trim(),
+      description: newProduct.description.replace(/^\s+|\s+$/g, '') || '—',
+      price: parseFloat(String(newProduct.price)),
+      stock_quantity: parseInt(String(newProduct.stock_quantity), 10),
+      image_url: newProduct.image_url || undefined,
+      category_id: categoryId,
+      brand_id: brandId,
+      care_type: newProduct.care_type as ProductCareType,
+      skin_type: serializeSkinTypes(newProduct.skin_types) || undefined,
+    };
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProductId(product.id);
+    setNewProduct({
+      name: product.name,
+      description: product.description === '—' ? '' : product.description,
+      price: product.price,
+      category_id: product.category_id ? String(product.category_id) : '',
+      brand_id: product.brand_id ? String(product.brand_id) : '',
+      care_type: (product.care_type as ProductCareType) || '',
+      skin_types: parseSkinTypes(product.skin_type),
+      stock_quantity: product.stock_quantity,
+      image_url: product.image_url || '',
+    });
+    setProductImagePreview(product.image_url || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (!newProduct.name || !newProduct.price || !newProduct.stock_quantity) {
-        alert('Заполните обязательные поля: Название, Цена, Количество');
+      if (
+        !newProduct.name ||
+        !newProduct.price ||
+        newProduct.stock_quantity === undefined ||
+        !newProduct.category_id ||
+        !newProduct.brand_id ||
+        !newProduct.care_type ||
+        newProduct.skin_types.length === 0
+      ) {
+        alert(
+          'Заполните обязательные поля: название, цена, количество, категория, бренд, тип ухода, хотя бы один тип кожи'
+        );
         return;
       }
 
-      const categoryId =
-        newProduct.category_id === '' || newProduct.category_id === undefined
-          ? null
-          : parseInt(String(newProduct.category_id), 10);
-      await productsAPI.createProduct({
-        name: newProduct.name,
-        description: (newProduct.description || '').trim() || '—',
-        price: parseFloat(String(newProduct.price)),
-        stock_quantity: parseInt(String(newProduct.stock_quantity), 10),
-        image_url: newProduct.image_url || undefined,
-        category_id: categoryId,
-      });
-      alert('Товар успешно добавлен!');
-      setNewProduct({
-        name: '',
-        description: '',
-        price: 0,
-        category_id: '',
-        stock_quantity: 0,
-        image_url: '',
-      });
-      setProductImagePreview('');
+      const payload = buildProductPayload();
+
+      if (editingProductId) {
+        const existing = products.find((p) => p.id === editingProductId);
+        await productsAPI.updateProduct(editingProductId, {
+          ...payload,
+          is_active: existing?.is_active ?? 1,
+        });
+        alert('Товар успешно обновлён!');
+      } else {
+        await productsAPI.createProduct(payload);
+        alert('Товар успешно добавлен!');
+      }
+
+      resetProductForm();
       const productsRes = await productsAPI.getProducts({ limit: 200 });
       setProducts(productsRes.data.products || []);
     } catch (error: any) {
-      console.error('Failed to create product:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Не удалось добавить товар';
-      alert(`Ошибка: ${errorMessage}`);
+      console.error('Failed to save product:', error);
+      const details = error.response?.data?.details;
+      const detailText = Array.isArray(details)
+        ? details.map((d: { msg?: string }) => d.msg).filter(Boolean).join('\n')
+        : '';
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Не удалось сохранить товар';
+      alert(detailText ? `Ошибка: ${errorMessage}\n${detailText}` : `Ошибка: ${errorMessage}`);
     }
   };
 
@@ -416,7 +485,9 @@ const Panel: React.FC = () => {
           <div className="space-y-6">
             {/* Add Product Form */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">Добавить новый товар</h2>
+              <h2 className="text-xl font-semibold mb-4">
+                {editingProductId ? 'Редактировать товар' : 'Добавить новый товар'}
+              </h2>
               <form onSubmit={handleProductSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
@@ -463,20 +534,90 @@ const Panel: React.FC = () => {
                   categories={categories}
                   value={newProduct.category_id}
                   onChange={(category_id) => setNewProduct({ ...newProduct, category_id })}
+                  placeholder="Выберите категорию"
                 />
+                <CategorySelect
+                  categories={brands}
+                  value={newProduct.brand_id}
+                  onChange={(brand_id) => setNewProduct({ ...newProduct, brand_id })}
+                  placeholder="Выберите бренд"
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Тип ухода
+                  </label>
+                  <select
+                    value={newProduct.care_type}
+                    onChange={(e) =>
+                      setNewProduct({
+                        ...newProduct,
+                        care_type: e.target.value as '' | ProductCareType,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    required
+                  >
+                    <option value="">Выберите тип ухода</option>
+                    {CARE_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Тип кожи <span className="font-normal text-gray-500">(можно выбрать несколько)</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md border border-gray-200 p-3 bg-gray-50/50">
+                    {SKIN_TYPE_OPTIONS.map((opt) => (
+                      <label
+                        key={opt.value}
+                        className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={newProduct.skin_types.includes(opt.value)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setNewProduct((prev) => ({
+                              ...prev,
+                              skin_types: checked
+                                ? [...prev.skin_types, opt.value]
+                                : prev.skin_types.filter((t) => t !== opt.value),
+                            }));
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-[#1B4B43] focus:ring-[#1B4B43]"
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <textarea
-                  placeholder="Описание"
+                  placeholder="Описание (Enter — новая строка, пустая строка — новый абзац)"
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-md md:col-span-2"
-                  rows={3}
+                  className="px-3 py-2 border border-gray-300 rounded-md md:col-span-2 whitespace-pre-wrap"
+                  rows={6}
                 />
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 md:col-span-2"
-                >
-                  Добавить товар
-                </button>
+                <div className="flex flex-wrap gap-3 md:col-span-2">
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    {editingProductId ? 'Сохранить изменения' : 'Добавить товар'}
+                  </button>
+                  {editingProductId && (
+                    <button
+                      type="button"
+                      onClick={resetProductForm}
+                      className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      Отмена
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -490,6 +631,8 @@ const Panel: React.FC = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Товар</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Категория / бренд</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Уход / кожа</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Остаток</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
@@ -507,9 +650,16 @@ const Panel: React.FC = () => {
                             />
                             <div>
                               <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                              <div className="text-sm text-gray-500">{product.category_name}</div>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          <div>{product.category_name || '—'}</div>
+                          <div className="text-gray-400">{product.brand_name || '—'}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          <div>{careTypeLabel(product.care_type)}</div>
+                          <div className="text-gray-400">{skinTypesLabel(product.skin_type)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatPrice(product.price)}
@@ -518,12 +668,26 @@ const Panel: React.FC = () => {
                           {product.stock_quantity}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleEditProduct(product)}
+                              className="text-[#1B4B43] hover:text-[#2a6b5f]"
+                              title="Редактировать"
+                              aria-label="Редактировать товар"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Удалить"
+                              aria-label="Удалить товар"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -642,10 +806,20 @@ const Panel: React.FC = () => {
                   {orders.map((order) => (
                     <tr key={order.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{order.id}
+                        <span>#{order.id}</span>
+                        {order.comment?.startsWith('[DEMO]') && (
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                            demo
+                          </span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {order.customer_name}
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div>{order.customer_name}</div>
+                        {order.comment && (
+                          <div className="text-xs text-gray-500 mt-0.5 max-w-[200px] truncate" title={order.comment}>
+                            {order.comment}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatPrice(Number(order.total_amount))}

@@ -1,13 +1,13 @@
-import { STORE_CATEGORY_NAMES } from './storeCategories';
-import { brandNavItems, categoryNavDescriptions } from './storeBrands';
+import { categoryNavDescriptions } from './storeBrands';
+import type { ProductCareType } from './productCareTypes';
 
 export type NavCategoryChild = {
   name: string;
   section: string;
   description: string;
-  /** Фильтр каталога по категории товара */
+  /** Фильтр каталога по категории товара (имя в БД) */
   category?: string;
-  /** Фильтр каталога по бренду (категория-бренд в БД) */
+  /** Фильтр каталога по бренду */
   brand?: string;
 };
 
@@ -15,7 +15,8 @@ export type NavScrollItem = {
   name: string;
   section: string;
   category?: string;
-  /** Подпись кнопки «показать всё» в выпадающем меню */
+  /** Фильтр: домашний или профессиональный уход */
+  careType?: ProductCareType;
   allLabel?: string;
   children?: NavCategoryChild[];
 };
@@ -31,37 +32,44 @@ export function isNavLink(item: NavItem): item is NavLinkItem {
   return 'path' in item;
 }
 
-const categoryChildren: NavCategoryChild[] = STORE_CATEGORY_NAMES.map((name) => ({
-  name,
-  section: 'products',
-  category: name,
-  description: categoryNavDescriptions[name] || name,
-}));
-
-const brandChildren: NavCategoryChild[] = brandNavItems.map((b) => ({
-  name: b.name,
-  section: 'products',
-  brand: b.name,
-  description: b.description,
-}));
+const categoryChildren: NavCategoryChild[] = [
+  {
+    name: 'Уход за лицом',
+    section: 'products',
+    category: 'Уход за лицом',
+    description: categoryNavDescriptions['Уход за лицом'],
+  },
+  {
+    name: 'Уход за телом',
+    section: 'products',
+    category: 'Уход за телом',
+    description: categoryNavDescriptions['Уход за телом'],
+  },
+  {
+    name: 'Средства SPF',
+    section: 'products',
+    category: 'Средства SPF',
+    description: categoryNavDescriptions['Средства SPF'],
+  },
+  {
+    name: 'Наборы 🔥',
+    section: 'products',
+    category: 'Наборы',
+    description: categoryNavDescriptions['Наборы'],
+  },
+];
 
 export const navMenu: NavItem[] = [
   { name: 'Главная', section: 'top' },
   {
     name: 'Категории',
-    section: 'categories',
+    section: 'products',
     allLabel: 'Все категории',
     children: categoryChildren,
   },
-  {
-    name: 'Бренды',
-    section: 'products',
-    allLabel: 'Все бренды',
-    children: brandChildren,
-  },
-  { name: 'Профессиональный уход', section: 'about' },
+  { name: 'Профессиональный уход', section: 'products', careType: 'professional' },
+  { name: 'Домашний уход', section: 'products', careType: 'home' },
   { name: 'Оплата', path: '/payment' },
   { name: 'Доставка', path: '/delivery' },
-  { name: 'Возврат товара', path: '/returns' },
   { name: 'Контакты', path: '/contacts' },
 ];

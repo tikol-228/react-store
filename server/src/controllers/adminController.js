@@ -5,6 +5,7 @@ import { Product } from '../models/Product.js';
 import { Contact } from '../models/Contact.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { validationResult } from 'express-validator';
+import { seedDemoOrders, clearAllDemoData } from '../db/seedDemoOrders.js';
 
 // Get dashboard stats
 export const getDashboardStats = asyncHandler(async (req, res) => {
@@ -164,4 +165,21 @@ export const verifyPanelPin = asyncHandler(async (req, res) => {
     throw error;
   }
   res.json({ ok: true });
+});
+
+export const createDemoOrders = asyncHandler(async (req, res) => {
+  const result = await seedDemoOrders({ replace: true });
+  res.json({
+    message: `Создано ${result.created} тестовых заказов (пометка [DEMO])`,
+    ...result,
+  });
+});
+
+export const removeDemoOrders = asyncHandler(async (req, res) => {
+  const { ordersDeleted, productsDeleted } = await clearAllDemoData();
+  res.json({
+    message: `Удалено: заказов — ${ordersDeleted}, товаров — ${productsDeleted}`,
+    ordersDeleted,
+    productsDeleted,
+  });
 });

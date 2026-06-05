@@ -1,290 +1,307 @@
-# React Store - Full-Stack E-commerce Application
+# React Store — интернет-магазин косметики
 
-A complete e-commerce store built with React (frontend) and Node.js + Express + SQLite (backend).
+Full-stack интернет-магазин: React (фронт) + Node.js / Express / SQLite (API).  
+Проект настроен для деплоя на **Railway** (два сервиса: `web` + `api`) и подключения **своего домена**.
 
-## Features
+**Репозиторий:** https://github.com/tikol-228/react-store
 
-### Frontend
-- Modern React application with TypeScript
-- Responsive design with Tailwind CSS
-- Product catalog with search and filtering
-- Shopping cart functionality
-- User authentication (JWT)
-- Admin panel for managing products, orders, and users
-- Favorites system
-- Order checkout process
+---
 
-### Backend
-- RESTful API built with Node.js and Express
-- SQLite database for data persistence
-- JWT authentication with role-based access
-- Password hashing with bcrypt
-- Input validation and error handling
-- File upload support
-- Admin notifications system
+## Содержание
 
-## Tech Stack
+- [Возможности](#возможности)
+- [Стек](#стек)
+- [Структура проекта](#структура-проекта)
+- [Локальный запуск](#локальный-запуск)
+- [Переменные окружения](#переменные-окружения)
+- [Деплой на Railway](#деплой-на-railway)
+- [Деплой через GitHub](#деплой-через-github)
+- [Свой домен](#свой-домен)
+- [Тариф Railway](#тариф-railway)
+- [Админ-панель](#админ-панель)
+- [API](#api)
+- [Частые проблемы](#частые-проблемы)
 
-### Frontend
-- React 19
-- TypeScript
-- Tailwind CSS
-- Axios for API calls
-- React Router for navigation
-- Lucide React for icons
+---
 
-### Backend
-- Node.js
-- Express.js
-- SQLite3
-- JWT for authentication
-- bcryptjs for password hashing
-- Winston for logging
-- express-validator for input validation
-- CORS support
+## Возможности
 
-## Project Structure
+### Фронтенд (`my-app`)
+- Каталог с фильтрами (категории, бренды, тип кожи, тип ухода)
+- Корзина, избранное, оформление заказа
+- Регистрация / вход (JWT + опционально Firebase)
+- Личный кабинет и история заказов
+- Админ-панель `/admin`
+- Адаптивная вёрстка (Tailwind CSS)
+
+### Бэкенд (`server`)
+- REST API на Express
+- SQLite (локально — файл, на Railway — volume)
+- JWT, роли (user / admin)
+- CRUD товаров, заказов, пользователей
+- Seed при первом запуске (админ + каталог)
+
+---
+
+## Стек
+
+| Часть | Технологии |
+|-------|------------|
+| Frontend | React 19, TypeScript, Vite, Tailwind, React Router, Axios |
+| Backend | Node.js, Express, SQLite3, JWT, bcryptjs, Winston |
+| Deploy | Railway (Railpack), GitHub |
+
+---
+
+## Структура проекта
 
 ```
 react-store/
-├── my-app/                 # Frontend React application
+├── my-app/              # React-фронтенд
 │   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   ├── contexts/       # React contexts (Auth, Cart, Favorites)
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API service functions
-│   │   ├── ui/             # UI components
-│   │   └── data/           # Static data (initially)
-│   ├── package.json
-│   └── .env
-├── server/                 # Backend Node.js application
+│   ├── railway.toml
+│   └── .env.example
+├── server/              # Express API + SQLite
 │   ├── src/
-│   │   ├── controllers/    # Route controllers
-│   │   ├── database/       # Database initialization and models
-│   │   ├── middleware/     # Express middleware
-│   │   ├── models/         # Database models
-│   │   ├── routes/         # API routes
-│   │   └── utils/          # Utility functions
-│   ├── package.json
-│   └── .env
+│   ├── railway.toml
+│   └── .env.example
+├── scripts/             # Скрипты сборки/старта для Railway
+├── DEPLOY_RAILWAY.md    # Подробный гайд по Railway
 └── README.md
 ```
 
-## Installation & Setup
+---
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
+## Локальный запуск
 
-### Backend Setup
+### Требования
+- Node.js **≥ 20**
+- npm
 
-1. Navigate to the server directory:
+### 1. Клонировать репозиторий
+
+```bash
+git clone https://github.com/tikol-228/react-store.git
+cd react-store
+npm run install-all
+```
+
+### 2. Настроить окружение
+
+```bash
+cp server/.env.example server/.env
+cp my-app/.env.example my-app/.env
+```
+
+Отредактируйте `server/.env` и `my-app/.env` (см. [переменные](#переменные-окружения)).
+
+### 3. Инициализировать БД
+
 ```bash
 cd server
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create environment file:
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your configuration:
-```env
-PORT=5000
-NODE_ENV=development
-DB_PATH=./database/store.db
-JWT_SECRET=your_super_secret_jwt_key_here
-JWT_EXPIRES_IN=7d
-ADMIN_EMAIL=admin@store.com
-ADMIN_PASSWORD=admin123
-```
-
-4. Initialize the database and seed data:
-```bash
 npm run init-db
 npm run seed
 ```
 
-5. Start the backend server:
-```bash
-npm run dev  # Development mode with nodemon
-# or
-npm start    # Production mode
-```
+### 4. Запустить фронт и API вместе
 
-The backend will be running on `http://localhost:5000`
+Из корня репозитория:
 
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-```bash
-cd my-app
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create environment file:
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your configuration:
-```env
-VITE_API_URL=http://localhost:5000/api
-# Firebase config (if using Firebase features)
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-# ... other Firebase config
-```
-
-4. Start the frontend development server:
 ```bash
 npm run dev
 ```
 
-The frontend will be running on `http://localhost:5173`
+| Сервис | URL |
+|--------|-----|
+| Фронт | http://localhost:5173 |
+| API | http://localhost:5000 |
+| Health | http://localhost:5000/api/health |
 
-## API Endpoints
+---
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/profile` - Get user profile
-- `PUT /api/auth/profile` - Update user profile
+## Переменные окружения
 
-### Products
-- `GET /api/products` - Get all products (with pagination, filtering)
-- `GET /api/products/:id` - Get single product
-- `POST /api/products` - Create product (admin only)
-- `PUT /api/products/:id` - Update product (admin only)
-- `DELETE /api/products/:id` - Delete product (admin only)
+### Backend (`server/.env`)
 
-### Categories
-- `GET /api/categories` - Get all categories
-- `GET /api/categories/:id` - Get single category
-- `POST /api/categories` - Create category (admin only)
-- `PUT /api/categories/:id` - Update category (admin only)
-- `DELETE /api/categories/:id` - Delete category (admin only)
+| Переменная | Описание |
+|------------|----------|
+| `PORT` | Порт API (по умолчанию `5000`) |
+| `NODE_ENV` | `development` / `production` |
+| `DB_PATH` | Путь к SQLite. Локально: `./database/store.db`. Railway: `/data/store.db` |
+| `JWT_SECRET` | Секрет для JWT (длинная случайная строка) |
+| `JWT_EXPIRES_IN` | Срок токена, напр. `7d` |
+| `ADMIN_EMAIL` | Email админа |
+| `ADMIN_PASSWORD` | Пароль админа |
+| `ADMIN_PANEL_PIN` | PIN для входа в `/admin` (опционально) |
+| `FRONTEND_URL` | URL фронта для CORS (без `/` в конце) |
+| `RUN_SEED` | `false` — не запускать seed при старте |
 
-### Orders
-- `POST /api/orders` - Create order
-- `GET /api/orders` - Get user orders or all orders (admin)
-- `GET /api/orders/:id` - Get single order
-- `PATCH /api/orders/:id/status` - Update order status (admin)
-- `DELETE /api/orders/:id` - Delete order (admin)
+### Frontend (`my-app/.env`)
 
-### Cart
-- `GET /api/cart` - Get user's cart
-- `POST /api/cart` - Add item to cart
-- `PUT /api/cart` - Update cart item quantity
-- `DELETE /api/cart/item/:product_id` - Remove item from cart
-- `DELETE /api/cart` - Clear cart
+| Переменная | Описание |
+|------------|----------|
+| `VITE_API_URL` | URL API, напр. `http://localhost:5000/api` |
+| `VITE_TELEGRAM_URL` | Ссылка Telegram (опционально) |
+| `VITE_INSTAGRAM_URL` | Ссылка Instagram (опционально) |
+| `VITE_FIREBASE_*` | Firebase Auth (если используется) |
 
-### Reviews
-- `GET /api/reviews/product/:product_id` - Get product reviews
-- `GET /api/reviews/user` - Get user's reviews
-- `POST /api/reviews` - Create review
-- `PUT /api/reviews/:id` - Update review
-- `DELETE /api/reviews/:id` - Delete review
+> `VITE_*` подставляются **при сборке**. После смены URL API нужен **новый деплой web**.
 
-### Users (Admin only)
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get single user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+---
 
-### Admin
-- `GET /api/admin/dashboard` - Get dashboard statistics
-- `GET /api/admin/notifications` - Get admin notifications
-- `PATCH /api/admin/notifications/:id/read` - Mark notification as read
-- `DELETE /api/admin/notifications/:id` - Delete notification
+## Деплой на Railway
 
-### Contacts
-- `POST /api/contacts` - Send contact message
-- `GET /api/contacts` - Get all contacts (admin)
-- `PATCH /api/contacts/:id/read` - Mark contact as read (admin)
-- `DELETE /api/contacts/:id` - Delete contact (admin)
+Два сервиса в **одном проекте Railway**:
 
-## Database Schema
+| Сервис | Root Directory | Start Command |
+|--------|----------------|---------------|
+| **api** | `server` | `node src/server.js` |
+| **web** | `my-app` | `npx serve dist -s -l $PORT` |
 
-The application uses SQLite with the following main tables:
+Подробности — в [DEPLOY_RAILWAY.md](./DEPLOY_RAILWAY.md).
 
-- `users` - User accounts
-- `products` - Product catalog
-- `categories` - Product categories
-- `orders` - Customer orders
-- `order_items` - Order line items
-- `cart` - Shopping cart items
-- `reviews` - Product reviews
-- `contacts` - Contact form submissions
-- `admin_notifications` - Admin notifications
+### Быстрый чеклист
 
-## Default Admin Account
+1. [railway.com](https://railway.com) → план **Hobby** ($5/мес)
+2. Создать проект → сервис **api**:
+   - Root Directory: `server`
+   - Generate Domain
+   - Volume: mount `/data`
+   - Variables: `DB_PATH=/data/store.db`, `JWT_SECRET`, `ADMIN_*`, `FRONTEND_URL`
+3. Сервис **web**:
+   - Root Directory: `my-app`
+   - `VITE_API_URL=https://${{api.RAILWAY_PUBLIC_DOMAIN}}/api`
+   - Generate Domain
+4. Обновить `FRONTEND_URL` в **api** → Redeploy api
+5. Проверка: `https://<api-domain>/api/health`
 
-After running the seed script, you can login as admin with:
-- Email: `admin@store.com`
-- Password: `admin123`
+### Деплой из CLI
 
-## Development
-
-### Running Tests
 ```bash
-# Backend tests
-cd server
-npm test
-
-# Frontend tests
-cd my-app
-npm test
+npm run deploy:login
+npm run deploy:api
+npm run deploy:web
 ```
 
-### Building for Production
+---
 
-#### Backend
+## Деплой через GitHub
+
+Автодеплой при push — рекомендуемый способ для production.
+
+### 1. Push в GitHub
+
 ```bash
-cd server
-npm run build
+git add .
+git commit -m "your message"
+git push origin main
 ```
 
-#### Frontend
-```bash
-cd my-app
-npm run build
-```
+### 2. Подключить репозиторий в Railway
 
-### Database Management
+1. Railway → проект → сервис **api**
+2. **Settings → Source → Connect Repo** → `tikol-228/react-store`
+3. **Root Directory:** `server`
+4. **Branch:** `main`
+5. Повторить для сервиса **web** (Root Directory: `my-app`)
 
-#### Initialize Database
-```bash
-cd server
-npm run init-db
-```
+После каждого push в `main` Railway пересобирает соответствующий сервис.
 
-#### Seed Database
-```bash
-cd server
-npm run seed
-```
+### 3. Переменные
 
-## Contributing
+Задайте все переменные в Railway Dashboard (не коммитьте `.env` в Git).
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+---
 
-## License
+## Свой домен
 
-This project is licensed under the MIT License.
+| Назначение | Пример |
+|------------|--------|
+| Сайт | `https://ваш-домен.com` |
+| API | `https://api.ваш-домен.com` |
 
-## Support
+### Клиент покупает домен
 
-For support, please contact the development team or create an issue in the repository.
+1. Клиент регистрирует домен у Reg.ru / Timeweb / Cloudflare и т.д.
+2. В Railway → **Networking → Custom Domain** добавить домены для **web** и **api**
+3. Клиент создаёт DNS-записи (CNAME), которые покажет Railway
+4. Обновить переменные:
+   - **api:** `FRONTEND_URL=https://ваш-домен.com`
+   - **web:** `VITE_API_URL=https://api.ваш-домен.com/api`
+5. Redeploy **api** и **web**
+6. Firebase → Authorized domains (если используется Firebase Auth)
+
+---
+
+## Тариф Railway
+
+| План | Цена | Когда |
+|------|------|-------|
+| **Hobby** | $5/мес | Старт, малый магазин — **обычно хватает** |
+| **Pro** | $20/мес | Стабильный overage > $10/мес, команда, production |
+
+**Где смотреть расход:** Railway → Workspace → **Billing / Usage**.
+
+**Оставаться на Hobby**, если usage ≤ $6–7/мес.  
+**Переходить на Pro**, если счёт стабильно **$10+/мес** или нужен доступ клиенту в workspace.
+
+Домен оплачивается **отдельно** у регистратора (~$10–15/год).
+
+---
+
+## Админ-панель
+
+| | |
+|---|---|
+| URL | `/admin` на сайте |
+| Логин | `ADMIN_EMAIL` / `ADMIN_PASSWORD` из env |
+| PIN | `ADMIN_PANEL_PIN` (если задан) |
+
+После локального seed по умолчанию: `admin@store.com` / `admin123` — **смените в production**.
+
+---
+
+## API
+
+Базовый URL: `{VITE_API_URL}` (напр. `https://api.example.com/api`).
+
+| Группа | Endpoints |
+|--------|-----------|
+| Auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/profile` |
+| Products | `GET /products`, `GET /products/:id`, CRUD (admin) |
+| Categories | `GET /categories`, CRUD (admin) |
+| Orders | `POST /orders`, `GET /orders`, `PATCH /orders/:id/status` |
+| Cart | `GET /cart`, `POST /cart`, `PUT /cart`, `DELETE /cart` |
+| Admin | `GET /admin/dashboard`, уведомления |
+| Health | `GET /health` |
+
+---
+
+## Частые проблемы
+
+| Проблема | Решение |
+|----------|---------|
+| CORS / login error | `FRONTEND_URL` = точный URL сайта, без `/` в конце |
+| Пустой каталог / 404 API | Пересобрать **web** с правильным `VITE_API_URL` |
+| `Route not found` на сайте | Root Directory **web** = `my-app`, не корень репо |
+| API не стартует | Root Directory **api** = `server`, Start = `node src/server.js` |
+| БД сбрасывается | Volume на `/data`, `DB_PATH=/data/store.db` |
+| `operation timed out` при CLI | `npm run deploy:api` / `deploy:web` или деплой через GitHub |
+
+---
+
+## Скрипты (корень)
+
+| Команда | Описание |
+|---------|----------|
+| `npm run dev` | API + фронт локально |
+| `npm run install-all` | Установить зависимости везде |
+| `npm run deploy:api` | Деплой API через Railway CLI |
+| `npm run deploy:web` | Деплой фронта через Railway CLI |
+| `npm run deploy:login` | Вход в Railway CLI |
+
+---
+
+## Лицензия
+
+MIT

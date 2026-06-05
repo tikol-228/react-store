@@ -9,7 +9,10 @@
     "railway:build": "npm install",
     "dev": "node --watch src/server.js",
     "init-db": "node src/db/init.js",
-    "seed": "node src/db/seed.js"
+    "seed": "node src/db/seed.js",
+    "seed:demo-orders": "node src/db/seedDemoOrders.js",
+    "clear:demo": "node --input-type=module -e \"import { clearAllDemoData } from './src/db/seedDemoOrders.js'; const r = await clearAllDemoData(); console.log(r);\"",
+    "clear:products": "node src/db/clearProducts.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

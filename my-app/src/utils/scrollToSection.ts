@@ -2,6 +2,10 @@ const HEADER_OFFSET = 100;
 
 export const PRODUCT_CATEGORY_FILTER_KEY = 'react-store-product-category';
 export const PRODUCT_BRAND_FILTER_KEY = 'react-store-product-brand';
+export const PRODUCT_CARE_TYPE_FILTER_KEY = 'react-store-product-care-type';
+export const PRODUCT_SKIN_TYPE_FILTER_KEY = 'react-store-product-skin-type';
+
+export type ProductCareTypeFilter = 'home' | 'professional';
 
 export function setProductCategoryFilter(categoryName: string | null) {
   if (categoryName) {
@@ -19,9 +23,27 @@ export function setProductBrandFilter(brandName: string | null) {
   }
 }
 
+export function setProductCareTypeFilter(careType: ProductCareTypeFilter | null) {
+  if (careType) {
+    sessionStorage.setItem(PRODUCT_CARE_TYPE_FILTER_KEY, careType);
+  } else {
+    sessionStorage.removeItem(PRODUCT_CARE_TYPE_FILTER_KEY);
+  }
+}
+
+export function setProductSkinTypeFilter(skinType: string | null) {
+  if (skinType) {
+    sessionStorage.setItem(PRODUCT_SKIN_TYPE_FILTER_KEY, skinType);
+  } else {
+    sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
+  }
+}
+
 export function clearProductCatalogFilters() {
   sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
   sessionStorage.removeItem(PRODUCT_BRAND_FILTER_KEY);
+  sessionStorage.removeItem(PRODUCT_CARE_TYPE_FILTER_KEY);
+  sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
 }
 
 function scrollToElement(sectionId: string, behavior: ScrollBehavior = 'smooth'): boolean {
@@ -57,12 +79,15 @@ export function scrollToSection(
   sectionId: string,
   behavior: ScrollBehavior = 'smooth',
   categoryName?: string | null,
-  brandName?: string | null
+  brandName?: string | null,
+  careType?: ProductCareTypeFilter | null
 ) {
   if (sectionId === 'products') {
     if (brandName) {
       setProductBrandFilter(brandName);
       sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
+      sessionStorage.removeItem(PRODUCT_CARE_TYPE_FILTER_KEY);
+      sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
       window.dispatchEvent(new CustomEvent('product-catalog-filter'));
       scrollToElement('products', behavior);
       return;
@@ -70,6 +95,17 @@ export function scrollToSection(
     if (categoryName) {
       setProductCategoryFilter(categoryName);
       sessionStorage.removeItem(PRODUCT_BRAND_FILTER_KEY);
+      sessionStorage.removeItem(PRODUCT_CARE_TYPE_FILTER_KEY);
+      sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
+      window.dispatchEvent(new CustomEvent('product-catalog-filter'));
+      scrollToElement('products', behavior);
+      return;
+    }
+    if (careType) {
+      setProductCareTypeFilter(careType);
+      sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
+      sessionStorage.removeItem(PRODUCT_BRAND_FILTER_KEY);
+      sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
       window.dispatchEvent(new CustomEvent('product-catalog-filter'));
       scrollToElement('products', behavior);
       return;

@@ -22,3 +22,23 @@ button,
 a {
   font: inherit;
 }
+
+/* Выравнивание абзацев по ширине (десктоп и мобильные) */
+@layer components {
+  .content-text p,
+  .content-text li {
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    text-wrap: pretty;
+  }
+}
+
+@layer utilities {
+  .text-justify-pretty {
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    text-wrap: pretty;
+  }
+}

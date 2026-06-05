@@ -10,10 +10,10 @@ const Banner: React.FC = () => {
         
         {/* Left Content */}
         <div className="z-10 space-y-6 sm:space-y-8 py-10 sm:py-20">
-          <div className="space-y-2 sm:space-y-4">
+          <div className="content-text space-y-2 sm:space-y-4">
             <span className="text-[#1B4B43] font-bold text-[10px] sm:text-xs uppercase tracking-[0.2em] block">Давайте знакомиться!</span>
             <h1 className="text-3xl sm:text-5xl lg:text-7xl font-medium text-[#1A1A1A] leading-[1.1]">
-              Юля Зубкевич
+              Юлия Зубкевич
             </h1>
             <p className="text-sm sm:text-base text-gray-500 max-w-md leading-relaxed">
               Я косметик-эстетист с высшим спортивным образованием. Более 13 лет я дарю красоту и здоровье коже.
@@ -63,7 +63,7 @@ const Banner: React.FC = () => {
           <div className="relative z-10 w-full h-[400px] lg:h-[600px] bg-[#E5E7E1] rounded-[40px] overflow-hidden">
             <img
               src="/IMG_0254.PNG"
-              alt="Юля Зубкевич"
+              alt="Юлия Зубкевич"
               className="w-full h-full object-cover grayscale-[20%] hover:scale-105 transition-transform duration-1000"
             />
           </div>

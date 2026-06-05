@@ -81,7 +81,7 @@ const Admin: React.FC = () => {
           </div>
           <p className="text-sm text-gray-600 mb-6">
             Введите PIN панели (значение <code className="text-xs bg-gray-100 px-1 rounded">ADMIN_PANEL_PIN</code> на сервере). Сначала войдите как администратор через{' '}
-            <Link to="/login" className="text-[#1B4B43] underline">
+            <Link to="/login?redirect=/admin" className="text-[#1B4B43] underline">
               вход
             </Link>
             .

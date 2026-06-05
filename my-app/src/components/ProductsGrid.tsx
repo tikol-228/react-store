@@ -4,13 +4,24 @@ import { productsAPI, categoriesAPI } from '../services/api';
 import { Search, X } from 'lucide-react';
 import {
   PRODUCT_BRAND_FILTER_KEY,
+  PRODUCT_CARE_TYPE_FILTER_KEY,
   PRODUCT_CATEGORY_FILTER_KEY,
+  PRODUCT_SKIN_TYPE_FILTER_KEY,
   setProductBrandFilter,
   setProductCategoryFilter,
+  setProductSkinTypeFilter,
   clearProductCatalogFilters,
+  type ProductCareTypeFilter,
 } from '../utils/scrollToSection';
+import { careTypeLabel } from '../data/productCareTypes';
 import { filterStoreCategories } from '../data/storeCategories';
 import { filterStoreBrands, brandNavItems, categoryNavDescriptions } from '../data/storeBrands';
+import {
+  isProductSkinType,
+  productHasSkinType,
+  skinTypeLabel,
+  type ProductSkinType,
+} from '../data/productSkinTypes';
 import { useSearch } from '../contexts/SearchContext';
 import CatalogPageHeader from './catalog/CatalogPageHeader';
 import CatalogSidebar from './catalog/CatalogSidebar';
@@ -22,6 +33,10 @@ interface Product {
   price: number;
   image_url?: string;
   category_id?: number;
+  brand_id?: number;
+  brand_name?: string;
+  care_type?: string;
+  skin_type?: string;
   stock_quantity: number;
   is_active: number;
   created_at: string;
@@ -37,7 +52,7 @@ interface Category {
 }
 
 const DEFAULT_CATALOG_DESCRIPTION =
-  'Поможем подобрать профессиональный уход под ваш тип кожи. Оставьте заявку — консультант свяжется с вами и подскажет, с чего начать домашний уход.';
+  'Помогу подобрать профессиональный уход именно под ваш тип кожи. Напишите мне — и мы вместе составим план, с чего начать домашнюю заботу о себе.';
 
 const ProductsGrid: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,6 +61,8 @@ const ProductsGrid: React.FC = () => {
   const { searchQuery, setSearchQuery, clearSearch } = useSearch();
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<number | null>(null);
+  const [selectedSkinType, setSelectedSkinType] = useState<ProductSkinType | null>(null);
+  const [selectedCareType, setSelectedCareType] = useState<ProductCareTypeFilter | null>(null);
   const [sortBy, setSortBy] = useState('newest');
   const [brands, setBrands] = useState<Category[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -108,23 +125,31 @@ const ProductsGrid: React.FC = () => {
   };
 
   const applyCategoryFilterByName = useCallback(
-    (categoryName: string) => {
+    (categoryName: string): boolean => {
       const cat = categories.find((c) => c.name === categoryName);
       if (cat) {
         setSelectedCategory(cat.id);
         setSelectedBrand(null);
+        setSelectedSkinType(null);
+        setSelectedCareType(null);
+        return true;
       }
+      return false;
     },
     [categories]
   );
 
   const applyBrandFilterByName = useCallback(
-    (brandName: string) => {
+    (brandName: string): boolean => {
       const brand = brands.find((b) => b.name === brandName);
       if (brand) {
         setSelectedBrand(brand.id);
         setSelectedCategory(null);
+        setSelectedSkinType(null);
+        setSelectedCareType(null);
+        return true;
       }
+      return false;
     },
     [brands]
   );
@@ -132,6 +157,9 @@ const ProductsGrid: React.FC = () => {
   const selectCategory = (id: number | null) => {
     setSelectedCategory(id);
     setSelectedBrand(null);
+    setSelectedSkinType(null);
+    setSelectedCareType(null);
+    sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
     if (id) {
       const name = categories.find((c) => c.id === id)?.name;
       setProductCategoryFilter(name ?? null);
@@ -145,6 +173,8 @@ const ProductsGrid: React.FC = () => {
   const selectBrand = (id: number | null) => {
     setSelectedBrand(id);
     setSelectedCategory(null);
+    setSelectedSkinType(null);
+    setSelectedCareType(null);
     if (id) {
       const name = brands.find((b) => b.id === id)?.name;
       setProductBrandFilter(name ?? null);
@@ -155,10 +185,42 @@ const ProductsGrid: React.FC = () => {
     scrollToCatalogTop();
   };
 
+  const applySkinTypeFilter = useCallback((skinType: ProductSkinType) => {
+    setSelectedSkinType(skinType);
+    setSelectedCategory(null);
+    setSelectedBrand(null);
+    setSelectedCareType(null);
+    sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
+    sessionStorage.removeItem(PRODUCT_BRAND_FILTER_KEY);
+    sessionStorage.removeItem(PRODUCT_CARE_TYPE_FILTER_KEY);
+    setProductSkinTypeFilter(skinType);
+  }, []);
+
+  const selectSkinType = (value: ProductSkinType | null) => {
+    if (value) {
+      applySkinTypeFilter(value);
+    } else {
+      setSelectedSkinType(null);
+      sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
+    }
+    scrollToCatalogTop();
+  };
+
+  const applyCareTypeFilter = useCallback((careType: ProductCareTypeFilter) => {
+    setSelectedCareType(careType);
+    setSelectedCategory(null);
+    setSelectedBrand(null);
+    setSelectedSkinType(null);
+    clearProductCatalogFilters();
+    sessionStorage.setItem(PRODUCT_CARE_TYPE_FILTER_KEY, careType);
+  }, []);
+
   const showAllProducts = useCallback(() => {
     clearSearch();
     setSelectedCategory(null);
     setSelectedBrand(null);
+    setSelectedSkinType(null);
+    setSelectedCareType(null);
     clearProductCatalogFilters();
     scrollToCatalogTop();
   }, [clearSearch]);
@@ -166,33 +228,65 @@ const ProductsGrid: React.FC = () => {
   useEffect(() => {
     const storedCategory = sessionStorage.getItem(PRODUCT_CATEGORY_FILTER_KEY);
     const storedBrand = sessionStorage.getItem(PRODUCT_BRAND_FILTER_KEY);
-    if (storedBrand && brands.length > 0) {
-      applyBrandFilterByName(storedBrand);
+    const storedCareType = sessionStorage.getItem(
+      PRODUCT_CARE_TYPE_FILTER_KEY
+    ) as ProductCareTypeFilter | null;
+    const storedSkinType = sessionStorage.getItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
+    if (storedBrand && brands.length > 0 && applyBrandFilterByName(storedBrand)) {
       sessionStorage.removeItem(PRODUCT_BRAND_FILTER_KEY);
-    } else if (storedCategory && categories.length > 0) {
-      applyCategoryFilterByName(storedCategory);
+    } else if (storedCategory && categories.length > 0 && applyCategoryFilterByName(storedCategory)) {
       sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
+    } else if (storedSkinType && isProductSkinType(storedSkinType)) {
+      applySkinTypeFilter(storedSkinType);
+      sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
+    } else if (storedCareType === 'home' || storedCareType === 'professional') {
+      applyCareTypeFilter(storedCareType);
+      sessionStorage.removeItem(PRODUCT_CARE_TYPE_FILTER_KEY);
     }
-  }, [categories, brands, applyBrandFilterByName, applyCategoryFilterByName]);
+  }, [
+    categories,
+    brands,
+    applyBrandFilterByName,
+    applyCategoryFilterByName,
+    applyCareTypeFilter,
+    applySkinTypeFilter,
+  ]);
 
   useEffect(() => {
     const onFilter = () => {
       const storedBrand = sessionStorage.getItem(PRODUCT_BRAND_FILTER_KEY);
       const storedCategory = sessionStorage.getItem(PRODUCT_CATEGORY_FILTER_KEY);
-      if (storedBrand) {
-        applyBrandFilterByName(storedBrand);
+      const storedCareType = sessionStorage.getItem(
+        PRODUCT_CARE_TYPE_FILTER_KEY
+      ) as ProductCareTypeFilter | null;
+      const storedSkinType = sessionStorage.getItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
+      if (storedBrand && applyBrandFilterByName(storedBrand)) {
         sessionStorage.removeItem(PRODUCT_BRAND_FILTER_KEY);
-      } else if (storedCategory) {
-        applyCategoryFilterByName(storedCategory);
+      } else if (storedCategory && applyCategoryFilterByName(storedCategory)) {
         sessionStorage.removeItem(PRODUCT_CATEGORY_FILTER_KEY);
+      } else if (storedSkinType && isProductSkinType(storedSkinType)) {
+        applySkinTypeFilter(storedSkinType);
+        sessionStorage.removeItem(PRODUCT_SKIN_TYPE_FILTER_KEY);
+      } else if (storedCareType === 'home' || storedCareType === 'professional') {
+        applyCareTypeFilter(storedCareType);
+        sessionStorage.removeItem(PRODUCT_CARE_TYPE_FILTER_KEY);
       } else {
         setSelectedCategory(null);
         setSelectedBrand(null);
+        setSelectedSkinType(null);
+        setSelectedCareType(null);
       }
     };
     window.addEventListener('product-catalog-filter', onFilter);
     return () => window.removeEventListener('product-catalog-filter', onFilter);
-  }, [categories, brands, applyBrandFilterByName, applyCategoryFilterByName]);
+  }, [
+    categories,
+    brands,
+    applyBrandFilterByName,
+    applyCategoryFilterByName,
+    applyCareTypeFilter,
+    applySkinTypeFilter,
+  ]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -208,9 +302,16 @@ const ProductsGrid: React.FC = () => {
     }
 
     if (selectedBrand) {
-      result = result.filter((p) => p.category_id === selectedBrand);
-    } else if (selectedCategory) {
+      result = result.filter((p) => p.brand_id === selectedBrand);
+    }
+    if (selectedCategory) {
       result = result.filter((p) => p.category_id === selectedCategory);
+    }
+    if (selectedSkinType) {
+      result = result.filter((p) => productHasSkinType(p.skin_type, selectedSkinType));
+    }
+    if (selectedCareType) {
+      result = result.filter((p) => p.care_type === selectedCareType);
     }
 
     switch (sortBy) {
@@ -230,17 +331,21 @@ const ProductsGrid: React.FC = () => {
     }
 
     return result;
-  }, [products, searchQuery, selectedCategory, selectedBrand, sortBy]);
+  }, [products, searchQuery, selectedCategory, selectedBrand, selectedSkinType, selectedCareType, sortBy]);
 
   const activeCategory = categories.find((c) => c.id === selectedCategory);
   const activeBrand = brands.find((b) => b.id === selectedBrand);
 
   const pageTitle = useMemo(() => {
-    if (searchQuery && !activeCategory && !activeBrand) return 'Результаты поиска';
+    if (searchQuery && !activeCategory && !activeBrand && !selectedSkinType && !selectedCareType) {
+      return 'Результаты поиска';
+    }
     if (activeBrand) return activeBrand.name;
     if (activeCategory) return activeCategory.name;
+    if (selectedCareType) return careTypeLabel(selectedCareType);
+    if (selectedSkinType) return `Тип кожи: ${skinTypeLabel(selectedSkinType)}`;
     return 'Каталог';
-  }, [searchQuery, activeCategory, activeBrand]);
+  }, [searchQuery, activeCategory, activeBrand, selectedSkinType, selectedCareType]);
 
   const pageDescription = useMemo(() => {
     if (activeCategory) {
@@ -268,11 +373,15 @@ const ProductsGrid: React.FC = () => {
       items.push({ label: activeBrand.name });
     } else if (activeCategory) {
       items.push({ label: activeCategory.name });
+    } else if (selectedCareType) {
+      items.push({ label: careTypeLabel(selectedCareType) });
+    } else if (selectedSkinType) {
+      items.push({ label: skinTypeLabel(selectedSkinType) });
     } else if (searchQuery) {
       items.push({ label: 'Поиск' });
     }
     return items;
-  }, [activeCategory, activeBrand, searchQuery]);
+  }, [activeCategory, activeBrand, selectedSkinType, selectedCareType, searchQuery, showAllProducts]);
 
   const resetFilters = () => {
     clearSearch();
@@ -396,8 +505,12 @@ const ProductsGrid: React.FC = () => {
               brands={brands}
               selectedCategoryId={selectedCategory}
               selectedBrandId={selectedBrand}
+              selectedSkinType={selectedSkinType}
+              selectedCareType={selectedCareType}
               onSelectCategory={selectCategory}
               onSelectBrand={selectBrand}
+              onSelectSkinType={selectSkinType}
+              onShowAll={showAllProducts}
             />
           </div>
         </div>

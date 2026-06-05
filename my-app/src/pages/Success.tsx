@@ -52,7 +52,11 @@ const Success: React.FC = () => {
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Дата заказа</h3>
                   <p className="text-[#1A1A1A] font-bold">{order.date}</p>
                   <p className="text-gray-500 mt-4 uppercase text-[10px] font-bold tracking-widest">Метод оплаты</p>
-                  <p className="text-[#1B4B43] font-bold">{order.customer.paymentMethod === 'card' ? 'Банковская карта' : 'При получении'}</p>
+                  <p className="text-[#1B4B43] font-bold">
+                    {order.customer.paymentMethod === 'card'
+                      ? 'Банковская карта (онлайн)'
+                      : 'Наличными при получении'}
+                  </p>
                 </div>
               </div>
 
@@ -104,9 +108,13 @@ const Success: React.FC = () => {
                 <Printer size={18} />
                 Распечатать чек
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 py-4 border border-gray-200 rounded-full font-bold text-gray-600 hover:bg-[#F3F4F0] transition-all">
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="flex-1 flex items-center justify-center gap-2 py-4 border border-gray-200 rounded-full font-bold text-gray-600 hover:bg-[#F3F4F0] transition-all"
+              >
                 <Download size={18} />
-                Скачать PDF
+                Сохранить / PDF
               </button>
               <Link 
                 to="/"

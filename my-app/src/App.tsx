@@ -19,6 +19,7 @@ import { CartProvider } from './contexts/CartContext'
 import { FavoritesProvider } from './contexts/FavoritesContext'
 import { SearchProvider } from './contexts/SearchContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import ScrollToTop from './components/ScrollToTop'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
       <CartProvider>
         <FavoritesProvider>
           <SearchProvider>
+          <ScrollToTop />
           <Routes>
             {/* Публичные маршруты */}
             <Route path="/" element={<Home />} />
@@ -60,14 +62,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/favorites"
-              element={
-                <ProtectedRoute>
-                  <Favorites />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/favorites" element={<Favorites />} />
 
             {/* Админ маршруты (для администраторов) */}
             <Route

@@ -56,7 +56,7 @@ const InfoPage = () => {
           </div>
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-2">{page.title}</h1>
-            <p className="text-gray-600">{page.subtitle}</p>
+            <p className="text-gray-600 text-justify-pretty">{page.subtitle}</p>
           </div>
         </div>
 
@@ -64,7 +64,7 @@ const InfoPage = () => {
           {page.sections.map((section) => (
             <section
               key={section.heading}
-              className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm"
+              className="content-text bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm"
             >
               <h2 className="text-xl font-semibold text-[#1A1A1A] mb-4">{section.heading}</h2>
               {section.paragraphs.map((p) => (

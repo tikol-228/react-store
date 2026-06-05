@@ -1,12 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Header from '../components/Header'
-import { goToProductsCatalog, scrollToSectionFromHash } from '../utils/scrollToSection'
-import SubFooter from '../components/SubFooter'
-import plane from '../icons/plane.svg'
-import returnIcon from '../icons/returnIcon.svg'
-import secure from '../icons/secure.svg'
-import support from '../icons/support.svg'
+import { goToProductsCatalog, scrollToSection, scrollToSectionFromHash } from '../utils/scrollToSection'
 import Footer from '../components/Footer'
 import ProductsGrid from '../components/ProductsGrid'
 import BookAppointmentButton from '../components/BookAppointmentButton'
@@ -19,11 +14,9 @@ const FACE_CARE_FALLBACK =
   'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=900'
 
 const categoryBanners = [
-  { name: 'Уход за лицом', count: 24, img: FACE_CARE_IMG, fallback: FACE_CARE_FALLBACK },
-  { name: 'Уход за телом', count: 18, img: BODY_CARE_IMG, fallback: BODY_CARE_IMG },
+  { name: 'Уход за лицом', img: FACE_CARE_IMG, fallback: FACE_CARE_FALLBACK },
+  { name: 'Уход за телом', img: BODY_CARE_IMG, fallback: BODY_CARE_IMG },
 ] as const
-
-const goToProducts = () => goToProductsCatalog()
 
 const Home = () => {
   const location = useLocation()
@@ -48,91 +41,46 @@ const Home = () => {
     <>
     <div id="top" className="bg-[#FAF9F6]">
       <Header />
-      
-      {/* Featured Categories */}
-      <section id="categories" className="py-12 sm:py-20">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-0 mb-8 sm:mb-12">
-            <div className="space-y-1 sm:space-y-2">
-              <span className="text-[#D19D6B] font-bold text-xs uppercase tracking-widest">Изучайте</span>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-[#1A1A1A]">По категориям</h2>
-            </div>
-            <button
-              type="button"
-              onClick={goToProducts}
-              className="text-xs sm:text-sm font-bold text-[#1B4B43] border-b-2 border-[#1B4B43] pb-1 hover:text-[#2a6b5f] hover:border-[#2a6b5f] transition-all self-start sm:self-auto"
-            >
-              Все категории
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-8">
-            {categoryBanners.map((cat) => (
-              <button
-                key={cat.name}
-                type="button"
-                onClick={goToProducts}
-                className="group relative aspect-[4/5] rounded-2xl sm:rounded-[30px] overflow-hidden cursor-pointer text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B4B43] focus-visible:ring-offset-2"
-              >
-                <img
-                  src={cat.img}
-                  alt={cat.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  onError={(e) => {
-                    const el = e.currentTarget
-                    if (el.src !== cat.fallback) el.src = cat.fallback
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 sm:p-8 text-white">
-                  <p className="text-xs sm:text-sm font-medium opacity-90">{cat.count} товаров</p>
-                  <h3 className="text-lg sm:text-2xl font-bold">{cat.name}</h3>
-                  <p className="mt-2 text-xs sm:text-sm font-medium text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Смотреть каталог →
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* About Section - Юля Зубкевич */}
-      <section id="about" className="py-12 sm:py-24 overflow-hidden">
+      {/* Главный экран — знакомство с Юлей */}
+      <section id="about" className="py-12 sm:py-24 overflow-hidden scroll-mt-28">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20 items-center">
           <div className="relative order-2 lg:order-1">
             <div className="aspect-[4/5] rounded-2xl sm:rounded-[40px] overflow-hidden shadow-2xl">
               <img 
                 src="/IMG_0254.PNG" 
-                alt="Юля Зубкевич - косметик-эстетист" 
+                alt="Юлия Зубкевич - косметик-эстетист" 
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="absolute -bottom-8 sm:-bottom-10 -right-8 sm:-right-10 bg-[#1B4B43] p-4 sm:p-10 rounded-2xl sm:rounded-[30px] text-white max-w-xs hidden md:block">
-              <p className="text-lg sm:text-2xl font-serif italic mb-2">"Показать эстетическое омоложение без единого укола"</p>
-              <p className="text-xs sm:text-sm opacity-70">— Моя цель</p>
+            <div className="absolute -bottom-4 sm:-bottom-10 -right-4 sm:-right-10 bg-[#1B4B43] p-4 sm:p-8 rounded-2xl sm:rounded-[30px] text-white max-w-[200px] sm:max-w-xs shadow-lg">
+              <p className="text-sm sm:text-xl font-serif italic mb-1 sm:mb-2 leading-snug">
+                Показать эстетическое омоложение без единого укола
+              </p>
+              <p className="text-[10px] sm:text-sm opacity-70">— Моя цель</p>
             </div>
           </div>
           
           <div className="space-y-6 sm:space-y-8 order-1 lg:order-2">
             <div className="space-y-2 sm:space-y-4">
               <span className="text-[#D19D6B] font-bold text-xs uppercase tracking-widest">Давайте знакомиться!</span>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-medium text-[#1A1A1A] leading-tight">
-                Юля <br />
-                <span className="italic font-serif">Зубкевич</span>
-              </h2>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-medium text-[#1A1A1A] leading-tight">
+                Юлия <br />
+                Зубкевич
+              </h1>
             </div>
             
-            <div className="space-y-3 sm:space-y-4 text-gray-600">
+            <div className="content-text space-y-3 sm:space-y-4 text-gray-600">
               <p className="text-sm sm:text-base lg:text-lg leading-relaxed">
                 Я косметик-эстетист с высшим спортивным образованием. Более 13 лет я дарю красоту и здоровье коже.
               </p>
-              <p className="text-lg leading-relaxed">
+              <p className="text-sm sm:text-base lg:text-lg leading-relaxed">
                 Я не предлагаю процедуры «на один раз», я не навязываю лишнее. Я предлагаю стратегии ухода и только то, что будет работать как актив, чтобы результат накапливался и усиливал вашу природную красоту.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#1A1A1A]">Что я делаю профессионально:</h3>
+            <div className="content-text space-y-4">
+              <h2 className="text-lg font-semibold text-[#1A1A1A]">Что я делаю профессионально:</h2>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3 text-[#1A1A1A]">
                   <span className="text-[#D19D6B] text-xl mt-1">✅</span>
@@ -151,8 +99,8 @@ const Home = () => {
               </ul>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-[#1A1A1A]">Вы пришли по адресу, если:</h3>
+            <div className="content-text space-y-4">
+              <h2 className="text-lg font-semibold text-[#1A1A1A]">Вы пришли по адресу, если:</h2>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-center gap-2">
                   <span className="text-[#D19D6B]">—</span> Не знаете, с чего начать
@@ -169,44 +117,51 @@ const Home = () => {
               </ul>
             </div>
 
-            <p className="text-lg font-medium text-[#1B4B43]">
+            <p className="text-base sm:text-lg font-medium text-[#1B4B43]">
               Забота о сложном — моя задача и это просто!
             </p>
 
-            <BookAppointmentButton className="inline-block px-10 py-4 bg-[#1A1A1A] text-white rounded-full font-medium hover:bg-black transition-all">
+            <BookAppointmentButton className="inline-block px-8 sm:px-10 py-3.5 sm:py-4 bg-[#1A1A1A] text-white rounded-full font-medium hover:bg-black transition-all text-sm sm:text-base">
               Подобрать косметику
             </BookAppointmentButton>
           </div>
         </div>
       </section>
 
-      <ProductsGrid />
-
-      {/* Features Section */}
-      <section id="features" className="py-12 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12">
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={plane} alt="самолёт" className="w-8 h-8" /></div>}
-            title="Бесплатная доставка"
-            desc="На все заказы от 50 Br"
-          />
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={returnIcon} alt="возврат" className="w-8 h-8" /></div>}
-            title="30 дней на возврат"
-            desc="Гарантия возврата денег"
-          />
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={secure} alt="безопасность" className="w-8 h-8" /></div>}
-            title="Безопасная оплата"
-            desc="100% защищенный платеж"
-          />
-          <SubFooter
-            icon={<div className="p-4 bg-[#F3F4F0] rounded-2xl"><img src={support} alt="поддержка" className="w-8 h-8" /></div>}
-            title="Поддержка 24/7"
-            desc="Всегда на связи с вами"
-          />
+      {/* Featured Categories */}
+      <section id="categories" className="py-12 sm:py-20 scroll-mt-28">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-8">
+            {categoryBanners.map((cat) => (
+              <button
+                key={cat.name}
+                type="button"
+                onClick={() => scrollToSection('products', 'smooth', cat.name)}
+                className="group relative aspect-[4/5] rounded-2xl sm:rounded-[30px] overflow-hidden cursor-pointer text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B4B43] focus-visible:ring-offset-2"
+              >
+                <img
+                  src={cat.img}
+                  alt={cat.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  onError={(e) => {
+                    const el = e.currentTarget
+                    if (el.src !== cat.fallback) el.src = cat.fallback
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 sm:p-8 text-white">
+                  <h3 className="text-lg sm:text-2xl font-bold">{cat.name}</h3>
+                  <p className="mt-2 text-xs sm:text-sm font-medium text-white/80 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Смотреть каталог →
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
+
+      <ProductsGrid />
+
       <Footer />
     </div>
     </>

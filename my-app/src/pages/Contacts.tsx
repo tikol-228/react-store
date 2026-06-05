@@ -13,7 +13,7 @@ const Contacts: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
         <div className="mb-10 sm:mb-14">
           <h1 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-3">Контакты</h1>
-          <p className="text-gray-600 text-base sm:text-lg max-w-2xl">
+          <p className="text-gray-600 text-base sm:text-lg max-w-2xl text-justify-pretty">
             Свяжитесь с нами или оставьте заявку на персональный подбор косметики
           </p>
         </div>
@@ -23,7 +23,7 @@ const Contacts: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12">
-          <div className="space-y-8">
+          <div className="content-text space-y-8">
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex items-start gap-4">
                 <Building2 className="w-6 h-6 text-[#1B4B43] flex-shrink-0 mt-1" />
@@ -37,10 +37,11 @@ const Contacts: React.FC = () => {
             <div className="flex items-start gap-4">
               <MapPin className="w-6 h-6 text-[#1B4B43] flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-lg mb-2">Адрес</h3>
-                <p className="text-gray-600">{companyInfo.address.city}</p>
-                <p className="text-gray-600">{companyInfo.address.street}</p>
-                <p className="text-gray-600">{companyInfo.address.floor}</p>
+                <h3 className="font-semibold text-lg mb-2">Адрес самовывоза</h3>
+                <p className="text-gray-600">
+                  {companyInfo.pickupAddress.country}, {companyInfo.pickupAddress.city}
+                </p>
+                <p className="text-gray-600">{companyInfo.pickupAddress.street}</p>
               </div>
             </div>
 
@@ -49,10 +50,10 @@ const Contacts: React.FC = () => {
               <div>
                 <h3 className="font-semibold text-lg mb-2">Телефон</h3>
                 <a
-                  href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}
+                  href={`tel:${companyInfo.phoneTel}`}
                   className="text-[#1B4B43] hover:underline text-lg font-semibold"
                 >
-                  {companyInfo.phone}
+                  {companyInfo.phoneDisplay}
                 </a>
               </div>
             </div>
@@ -91,7 +92,10 @@ const Contacts: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-[#1B4B43] to-[#0f2f2a] text-white p-6 sm:p-8 rounded-2xl h-fit">
+          <div
+            id="requisites"
+            className="bg-gradient-to-br from-[#1B4B43] to-[#0f2f2a] text-white p-6 sm:p-8 rounded-2xl h-fit scroll-mt-28"
+          >
             <h3 className="font-semibold text-2xl mb-6">Банковские реквизиты</h3>
             <div className="space-y-6">
               <div>

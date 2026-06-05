@@ -5,7 +5,7 @@ export interface Product {
   oldPrice?: number;
   image: string;
   category: string;
-  rating: number;
+  rating?: number;
   badge?: string;
 }
 

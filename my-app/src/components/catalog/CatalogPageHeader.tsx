@@ -50,7 +50,7 @@ const CatalogPageHeader = ({ breadcrumbs, title, description }: CatalogPageHeade
           alt="Консультант по подбору косметики"
           className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 border-2 border-white shadow-sm"
         />
-        <div className="flex-1 min-w-0">
+        <div className="content-text flex-1 min-w-0">
           <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{description}</p>
           <BookAppointmentButton className="mt-4 inline-block text-sm font-semibold text-[#1B4B43] hover:text-[#2a6b5f] underline underline-offset-2">
             Подобрать косметику →

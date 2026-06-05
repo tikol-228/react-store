@@ -1,3 +1,6 @@
+import { SKIN_TYPE_OPTIONS, type ProductSkinType } from '../../data/productSkinTypes';
+import type { ProductCareTypeFilter } from '../../utils/scrollToSection';
+
 type CatalogItem = {
   id: number;
   name: string;
@@ -8,8 +11,12 @@ type CatalogSidebarProps = {
   brands: CatalogItem[];
   selectedCategoryId: number | null;
   selectedBrandId: number | null;
+  selectedSkinType: ProductSkinType | null;
+  selectedCareType: ProductCareTypeFilter | null;
   onSelectCategory: (id: number | null) => void;
   onSelectBrand: (id: number | null) => void;
+  onSelectSkinType: (value: ProductSkinType | null) => void;
+  onShowAll: () => void;
 };
 
 const linkClass = (active: boolean) =>
@@ -24,8 +31,12 @@ const CatalogSidebar = ({
   brands,
   selectedCategoryId,
   selectedBrandId,
+  selectedSkinType,
+  selectedCareType,
   onSelectCategory,
   onSelectBrand,
+  onSelectSkinType,
+  onShowAll,
 }: CatalogSidebarProps) => (
   <aside className="w-full lg:w-[260px] shrink-0">
     <div className="lg:sticky lg:top-28 space-y-8">
@@ -37,8 +48,13 @@ const CatalogSidebar = ({
           <li>
             <button
               type="button"
-              onClick={() => onSelectCategory(null)}
-              className={linkClass(selectedCategoryId === null && selectedBrandId === null)}
+              onClick={onShowAll}
+              className={linkClass(
+                selectedCategoryId === null &&
+                  selectedBrandId === null &&
+                  selectedSkinType === null &&
+                  selectedCareType === null
+              )}
             >
               Все товары
             </button>
@@ -51,6 +67,27 @@ const CatalogSidebar = ({
                 className={linkClass(selectedCategoryId === cat.id)}
               >
                 {cat.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-bold text-[#1A1A1A] uppercase tracking-widest mb-4 pb-2 border-b border-gray-200">
+          Тип кожи
+        </h2>
+        <ul className="space-y-0.5">
+          {SKIN_TYPE_OPTIONS.map((opt) => (
+            <li key={opt.value}>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectSkinType(selectedSkinType === opt.value ? null : opt.value)
+                }
+                className={linkClass(selectedSkinType === opt.value)}
+              >
+                {opt.label}
               </button>
             </li>
           ))}

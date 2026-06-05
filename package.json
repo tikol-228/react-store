@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "Full-stack React e-commerce store",
   "scripts": {
+    "build": "node scripts/railway-build.mjs",
+    "start": "node scripts/railway-start.mjs",
     "install-all": "npm install && npm install --prefix server && npm install --prefix my-app",
     "postinstall": "npm install --prefix server --omit=dev",
     "kill-api-port": "sh -c 'lsof -ti :5000 | xargs -r kill -9 2>/dev/null || true'",
     "dev": "npm run kill-api-port && concurrently \"npm run dev --prefix server\" \"npm run dev --prefix my-app\"",
-    "start": "cd server && node src/server.js",
     "install-server": "npm install --prefix server",
     "install-client": "npm install --prefix my-app",
     "railway": "npx @railway/cli",

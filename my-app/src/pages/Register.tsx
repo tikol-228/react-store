@@ -204,13 +204,13 @@ const Register: React.FC = () => {
               />
               <span className="text-sm text-gray-600">
                 Я согласен с{' '}
-                <a href="#" className="text-[#1B4B43] hover:underline font-medium">
+                <Link to="/info/terms" className="text-[#1B4B43] hover:underline font-medium">
                   условиями использования
-                </a>
+                </Link>
                 {' '}и{' '}
-                <a href="#" className="text-[#1B4B43] hover:underline font-medium">
+                <Link to="/info/privacy" className="text-[#1B4B43] hover:underline font-medium">
                   политикой конфиденциальности
-                </a>
+                </Link>
               </span>
             </label>
 

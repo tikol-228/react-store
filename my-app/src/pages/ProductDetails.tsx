@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Heart, ShoppingBag, Star } from 'lucide-react';
+import { ArrowLeft, Heart, ShoppingBag } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { productsAPI } from '../services/api';
@@ -65,7 +65,6 @@ const ProductDetails: React.FC = () => {
       title: product.name,
       category: product.category_name || 'Категория',
       price: product.price,
-      rating: product.rating || 4.5,
       image: product.image_url || '/placeholder-product.jpg',
     });
   };
@@ -76,7 +75,7 @@ const ProductDetails: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-12">
         <Link
-          to="/"
+          to="/#products"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-[#1B4B43]"
         >
           <ArrowLeft size={18} />
@@ -102,22 +101,17 @@ const ProductDetails: React.FC = () => {
               {product.name}
             </h1>
 
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex items-center gap-1 text-orange-400">
-                <Star size={18} className="fill-current" />
-                <span className="font-semibold text-[#1A1A1A]">{product.rating ? product.rating.toFixed(1) : '4.5'}</span>
-              </div>
-            </div>
-
             <div className="mb-8 flex items-center gap-3">
               <span className="text-3xl font-bold text-[#1A1A1A]">
                 {formatPrice(product.price)}
               </span>
             </div>
 
-            <p className="mb-8 max-w-xl text-base leading-relaxed text-gray-600">
-              {product.description || 'Описание товара временно отсутствует.'}
-            </p>
+            <div className="content-text mb-8 max-w-xl text-base leading-relaxed text-gray-600 text-justify-pretty whitespace-pre-wrap">
+              {product.description && product.description !== '—'
+                ? product.description
+                : 'Описание товара временно отсутствует.'}
+            </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
               <button

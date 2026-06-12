@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, AlertCircle, CheckCircle, Phone } from 'lucide-react';
 
 const Register: React.FC = () => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -14,15 +16,15 @@ const Register: React.FC = () => {
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const getErrorMessage = (errorCode: string) => {
-    const errorMessages: { [key: string]: string } = {
-      'auth/email-already-in-use': 'Этот email уже зарегистрирован',
-      'auth/invalid-email': 'Некорректный email адрес',
-      'auth/weak-password': 'Пароль слишком короткий (минимум 6 символов)',
-      'auth/operation-not-allowed': 'Регистрация временно недоступна',
-      'auth/too-many-requests': 'Слишком много попыток. Попробуйте позже',
-    };
-    return errorMessages[errorCode] || 'Ошибка при регистрации. Попробуйте еще раз';
+  const getErrorMessage = (error: unknown) => {
+    if (error instanceof Error && error.message) {
+      const msg = error.message;
+      if (msg.includes('already exists') || msg.includes('User already')) {
+        return 'Этот email уже зарегистрирован';
+      }
+      if (msg !== 'Registration failed') return msg;
+    }
+    return 'Ошибка при регистрации. Попробуйте ещё раз';
   };
 
   const validatePassword = (pwd: string) => {
@@ -39,7 +41,7 @@ const Register: React.FC = () => {
     setSuccess(false);
 
     // Валидация
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstName.trim() || !lastName.trim() || !email || !phone.trim() || !password || !confirmPassword) {
       setError('Пожалуйста, заполните все поля');
       return;
     }
@@ -58,17 +60,13 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const trimmed = name.trim();
-      const parts = trimmed.split(/\s+/);
-      const firstName = parts[0] || trimmed;
-      const lastName = parts.slice(1).join(' ') || firstName;
-      await register(firstName, lastName, email, password);
+      await register(firstName.trim(), lastName.trim(), email, password, phone.trim());
       setSuccess(true);
       setTimeout(() => {
         navigate('/profile');
       }, 1500);
-    } catch (err: any) {
-      setError(getErrorMessage(err.code || ''));
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
       console.error('Register error:', err);
     } finally {
       setLoading(false);
@@ -116,20 +114,41 @@ const Register: React.FC = () => {
               </div>
             )}
 
-            {/* Name */}
+            {/* Имя */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Ваше имя
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                Имя
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
-                  id="name"
+                  id="firstName"
                   type="text"
                   required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Иван Петров"
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Иван"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Фамилия */}
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                Фамилия
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <input
+                  id="lastName"
+                  type="text"
+                  required
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Петров"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent transition-all"
                 />
               </div>
@@ -149,6 +168,26 @@ const Register: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Телефон */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Телефон
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <input
+                  id="phone"
+                  type="tel"
+                  required
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+375 29 123-45-67"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B4B43] focus:border-transparent transition-all"
                 />
               </div>

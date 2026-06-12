@@ -3,7 +3,9 @@ import { Order } from '../models/Order.js';
 import { Cart } from '../models/Cart.js';
 import { AdminNotification } from '../models/AdminNotification.js';
 import { Product } from '../models/Product.js';
+import { getMinskDeliveryFee, buildFulfillmentComment, resolveShippingAddress } from '../constants/delivery.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { isValidOrderStatus } from '../constants/orderStatuses.js';
 
 // Validation rules
 export const validateOrder = [
@@ -11,6 +13,7 @@ export const validateOrder = [
   body('customer_email').isEmail().normalizeEmail(),
   body('customer_phone').trim().isLength({ min: 1 }),
   body('shipping_address').trim().isLength({ min: 1 }),
+  body('fulfillment_method').optional().isIn(['delivery', 'pickup']),
   body('items').isArray({ min: 1 }),
   body('items.*.product_id').isInt({ min: 1 }),
   body('items.*.quantity').isInt({ min: 1 }),
@@ -27,7 +30,8 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const { customer_name, customer_email, customer_phone, shipping_address, comment, items } = req.body;
+  const { customer_name, customer_email, customer_phone, shipping_address, comment, items, fulfillment_method } = req.body;
+  const fulfillmentMethod = fulfillment_method === 'pickup' ? 'pickup' : 'delivery';
   const user_id = req.user ? Number(req.user.id) : null;
 
   const normalizedItems = [];
@@ -50,16 +54,22 @@ export const createOrder = asyncHandler(async (req, res) => {
     });
   }
 
-  const total_amount = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemsSubtotal = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const delivery_fee = getMinskDeliveryFee(itemsSubtotal, fulfillmentMethod);
+  const total_amount = itemsSubtotal + delivery_fee;
+
+  const fulfillmentNote = buildFulfillmentComment(fulfillmentMethod, delivery_fee);
+  const fullComment = [comment, fulfillmentNote].filter(Boolean).join('\n');
+  const resolvedAddress = resolveShippingAddress(shipping_address, fulfillmentMethod);
 
   const order = await Order.create({
     user_id,
     customer_name,
     customer_email,
     customer_phone,
-    shipping_address,
+    shipping_address: resolvedAddress,
     total_amount,
-    comment,
+    comment: fullComment,
     items: normalizedItems,
   });
 
@@ -131,7 +141,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+  if (!isValidOrderStatus(status)) {
     const error = new Error('Invalid status');
     error.statusCode = 400;
     throw error;

@@ -15,7 +15,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  register: (firstName: string, lastName: string, email: string, password: string, phone?: string) => Promise<void>;
+  register: (firstName: string, lastName: string, email: string, password: string, phone: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: { first_name?: string; last_name?: string; phone?: string }) => Promise<void>;
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })();
   }, []);
 
-  const register = async (firstName: string, lastName: string, email: string, password: string, phone?: string) => {
+  const register = async (firstName: string, lastName: string, email: string, password: string, phone: string) => {
     try {
       const response = await authAPI.register({
         email,

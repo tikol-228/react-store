@@ -5,6 +5,11 @@ import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { formatPrice } from '../utils/formatPrice';
+import {
+  formatDeliveryLine,
+  getMinskDeliveryFee,
+  getOrderTotal,
+} from '../utils/delivery';
 
 const Cart: React.FC = () => {
   const { cartItems, removeFromCart, updateQuantity, totalPrice, isLoading, totalItems } = useCart();
@@ -51,6 +56,9 @@ const Cart: React.FC = () => {
       setUpdatingId(null);
     }
   };
+
+  const deliveryFee = getMinskDeliveryFee(totalPrice);
+  const orderTotal = getOrderTotal(totalPrice);
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -193,11 +201,16 @@ const Cart: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-xs sm:text-sm text-gray-500">
                     <span>Доставка</span>
-                    <span className="text-[#1B4B43] font-medium">Бесплатно</span>
+                    <span className={deliveryFee === 0 ? 'text-[#1B4B43] font-medium' : 'font-medium text-gray-800'}>
+                      {formatDeliveryLine(deliveryFee)}
+                    </span>
                   </div>
+                  <p className="text-[10px] sm:text-xs text-gray-400 leading-snug">
+                    При самовывозе доставка не оплачивается — выберите при оформлении заказа.
+                  </p>
                   <div className="pt-2 sm:pt-4 border-t border-gray-100 flex justify-between text-base sm:text-xl font-bold text-[#1A1A1A]">
                     <span>Всего</span>
-                    <span>{formatPrice(totalPrice)}</span>
+                    <span>{formatPrice(orderTotal)}</span>
                   </div>
                 </div>
 

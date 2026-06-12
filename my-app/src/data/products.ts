@@ -7,6 +7,7 @@ export interface Product {
   category: string;
   rating?: number;
   badge?: string;
+  care_type?: string;
 }
 
 export const initialProducts: Product[] = [

@@ -71,7 +71,7 @@ export const initDatabase = async () => {
       customer_phone TEXT NOT NULL,
       shipping_address TEXT NOT NULL,
       total_amount REAL NOT NULL,
-      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'ready_for_pickup', 'picked_up', 'delivered', 'cancelled')),
       comment TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -144,6 +144,8 @@ export const initDatabase = async () => {
 
   await migrateContactsTable(db);
   await migrateProductsTable(db);
+  await migrateOrdersTable(db);
+  await migrateOrdersPickedUpStatus(db);
 
   console.log('Database initialized successfully');
   return db;
@@ -166,15 +168,144 @@ async function migrateProductsTable(db) {
     );
   }
   if (!columns.some((col) => col.name === 'care_type')) {
-    await db.run(
-      "ALTER TABLE products ADD COLUMN care_type TEXT CHECK (care_type IN ('home', 'professional'))"
-    );
+    await db.run('ALTER TABLE products ADD COLUMN care_type TEXT');
   }
   if (!columns.some((col) => col.name === 'skin_type')) {
     await db.run('ALTER TABLE products ADD COLUMN skin_type TEXT');
   }
   await db.run('CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand_id)');
   await db.run('CREATE INDEX IF NOT EXISTS idx_products_skin_type ON products(skin_type)');
+  await migrateProductsCareTypeConstraint(db);
+}
+
+async function migrateProductsCareTypeConstraint(db) {
+  const table = await db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='products'");
+  if (!table?.sql?.includes("care_type IN ('home', 'professional')")) return;
+
+  await db.exec(`
+    PRAGMA foreign_keys = OFF;
+    BEGIN TRANSACTION;
+
+    CREATE TABLE products_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      price REAL NOT NULL,
+      image_url TEXT,
+      category_id INTEGER,
+      brand_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+      care_type TEXT,
+      skin_type TEXT,
+      stock_quantity INTEGER DEFAULT 0,
+      is_active BOOLEAN DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+    );
+
+    INSERT INTO products_new (
+      id, name, description, price, image_url, category_id, brand_id,
+      care_type, skin_type, stock_quantity, is_active, created_at, updated_at
+    )
+    SELECT
+      id, name, description, price, image_url, category_id, brand_id,
+      care_type, skin_type, stock_quantity, is_active, created_at, updated_at
+    FROM products;
+
+    DROP TABLE products;
+    ALTER TABLE products_new RENAME TO products;
+
+    COMMIT;
+    PRAGMA foreign_keys = ON;
+  `);
+
+  await db.run('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)');
+  await db.run('CREATE INDEX IF NOT EXISTS idx_products_brand ON products(brand_id)');
+  await db.run('CREATE INDEX IF NOT EXISTS idx_products_skin_type ON products(skin_type)');
+}
+
+async function migrateOrdersTable(db) {
+  const table = await db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'");
+  if (table?.sql?.includes('ready_for_pickup')) return;
+
+  await db.exec(`
+    PRAGMA foreign_keys = OFF;
+    BEGIN TRANSACTION;
+
+    CREATE TABLE orders_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      customer_name TEXT NOT NULL,
+      customer_email TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      shipping_address TEXT NOT NULL,
+      total_amount REAL NOT NULL,
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'ready_for_pickup', 'picked_up', 'delivered', 'cancelled')),
+      comment TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    INSERT INTO orders_new (
+      id, user_id, customer_name, customer_email, customer_phone,
+      shipping_address, total_amount, status, comment, created_at, updated_at
+    )
+    SELECT
+      id, user_id, customer_name, customer_email, customer_phone,
+      shipping_address, total_amount, status, comment, created_at, updated_at
+    FROM orders;
+
+    DROP TABLE orders;
+    ALTER TABLE orders_new RENAME TO orders;
+
+    COMMIT;
+    PRAGMA foreign_keys = ON;
+  `);
+
+  await db.run('CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)');
+}
+
+async function migrateOrdersPickedUpStatus(db) {
+  const table = await db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'");
+  if (!table?.sql || table.sql.includes('picked_up')) return;
+
+  await db.exec(`
+    PRAGMA foreign_keys = OFF;
+    BEGIN TRANSACTION;
+
+    CREATE TABLE orders_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      customer_name TEXT NOT NULL,
+      customer_email TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      shipping_address TEXT NOT NULL,
+      total_amount REAL NOT NULL,
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'ready_for_pickup', 'picked_up', 'delivered', 'cancelled')),
+      comment TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    INSERT INTO orders_new (
+      id, user_id, customer_name, customer_email, customer_phone,
+      shipping_address, total_amount, status, comment, created_at, updated_at
+    )
+    SELECT
+      id, user_id, customer_name, customer_email, customer_phone,
+      shipping_address, total_amount, status, comment, created_at, updated_at
+    FROM orders;
+
+    DROP TABLE orders;
+    ALTER TABLE orders_new RENAME TO orders;
+
+    COMMIT;
+    PRAGMA foreign_keys = ON;
+  `);
+
+  await db.run('CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)');
 }
 
 // Get database instance

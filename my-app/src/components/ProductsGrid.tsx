@@ -13,7 +13,7 @@ import {
   clearProductCatalogFilters,
   type ProductCareTypeFilter,
 } from '../utils/scrollToSection';
-import { careTypeLabel } from '../data/productCareTypes';
+import { careTypeLabel, productHasCareType } from '../data/productCareTypes';
 import { filterStoreCategories } from '../data/storeCategories';
 import { filterStoreBrands, brandNavItems, categoryNavDescriptions } from '../data/storeBrands';
 import {
@@ -311,7 +311,7 @@ const ProductsGrid: React.FC = () => {
       result = result.filter((p) => productHasSkinType(p.skin_type, selectedSkinType));
     }
     if (selectedCareType) {
-      result = result.filter((p) => p.care_type === selectedCareType);
+      result = result.filter((p) => productHasCareType(p.care_type, selectedCareType));
     }
 
     switch (sortBy) {
@@ -475,6 +475,7 @@ const ProductsGrid: React.FC = () => {
                       price: p.price,
                       image_url: p.image_url,
                       category_name: p.category_name,
+                      care_type: p.care_type,
                     }}
                   />
                 ))}

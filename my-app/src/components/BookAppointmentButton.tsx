@@ -6,7 +6,7 @@ type BookAppointmentButtonProps = {
 };
 
 const BookAppointmentButton = ({
-  children = 'Подобрать косметику',
+  children = 'Записаться на консультацию',
   className,
 }: BookAppointmentButtonProps) => (
   <a

@@ -72,29 +72,48 @@ const Home = () => {
             
             <div className="content-text space-y-3 sm:space-y-4 text-gray-600">
               <p className="text-sm sm:text-base lg:text-lg leading-relaxed">
-                Я косметик-эстетист с высшим спортивным образованием. Более 13 лет я дарю красоту и здоровье коже.
+                Я косметик-эстетист с высшим спортивным образованием. Более 13 лет я дарю красоту и здоровье коже, это годы практики, обучения и любви к профессии.
               </p>
               <p className="text-sm sm:text-base lg:text-lg leading-relaxed">
-                Я не предлагаю процедуры «на один раз», я не навязываю лишнее. Я предлагаю стратегии ухода и только то, что будет работать как актив, чтобы результат накапливался и усиливал вашу природную красоту.
+                Я не предлагаю процедуры «на один-два раза», я не навязываю лишнее. Я предлагаю стратегии ухода и только то, что будет работать как актив, чтобы результат накапливался и усиливал вашу природную красоту.
               </p>
             </div>
 
             <div className="content-text space-y-4">
-              <h2 className="text-lg font-semibold text-[#1A1A1A]">Что я делаю профессионально:</h2>
-              <ul className="space-y-3">
+              <h2 className="text-lg font-semibold text-[#1A1A1A]">Что я делаю для вашей красоты:</h2>
+              <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-[#1A1A1A]">
-                  <span className="text-[#D19D6B] text-xl mt-1">✅</span>
-                  <div>
+                  <span className="text-[#D19D6B] text-xl mt-1 flex-shrink-0">✅</span>
+                  <div className="space-y-1">
                     <p className="font-semibold">Массаж лица</p>
-                    <p className="text-sm text-gray-600">Методика Сергея Щуревича — тяжелая артиллерия, которой я владею</p>
+                    <p className="text-sm text-gray-600">Это мощная работа с тканями, которая запускает естественные процессы омоложения.</p>
+                    <p className="text-sm text-gray-600">Мои техники — это точность, глубина и результат, который видно в зеркале.</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3 text-[#1A1A1A]">
-                  <span className="text-[#D19D6B] text-xl mt-1">✅</span>
-                  <div>
+                  <span className="text-[#D19D6B] text-xl mt-1 flex-shrink-0">✅</span>
+                  <div className="space-y-1">
                     <p className="font-semibold">Подбор домашнего ухода</p>
-                    <p className="text-sm text-gray-600">Составлю персональный маршрут ухода специально для вас</p>
+                    <p className="text-sm text-gray-600">Составлю персональный маршрут ухода специально для вас, который работает 24/7.</p>
+                    <p className="text-sm text-gray-600">Без хаоса, без случайных покупок, без разочарований.</p>
+                    <p className="text-sm text-gray-600">Только активы, которые усиливают вашу природную красоту день за днём.</p>
                   </div>
+                </li>
+              </ul>
+            </div>
+
+            <div className="content-text space-y-3">
+              <h2 className="text-lg font-semibold text-[#1A1A1A]">Мои достижения — ваша гарантия результата:</h2>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0">🏆</span>
+                  <span>
+                    Победитель международного чемпионата в Риме (2026 год) в категории «Эстетический массаж» — это высокое признание на международном уровне (итальянцы знают толк в красоте, и для меня это большая честь).
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#D19D6B] flex-shrink-0">—</span>
+                  <span>Участница чемпионата по массажу в Минске (2013), приз за художественное исполнение.</span>
                 </li>
               </ul>
             </div>
@@ -122,7 +141,7 @@ const Home = () => {
             </p>
 
             <BookAppointmentButton className="inline-block px-8 sm:px-10 py-3.5 sm:py-4 bg-[#1A1A1A] text-white rounded-full font-medium hover:bg-black transition-all text-sm sm:text-base">
-              Подобрать косметику
+              Записаться на консультацию
             </BookAppointmentButton>
           </div>
         </div>

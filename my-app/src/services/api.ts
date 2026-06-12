@@ -62,7 +62,7 @@ export const authAPI = {
     password: string;
     first_name: string;
     last_name: string;
-    phone?: string;
+    phone: string;
   }) => api.post('/auth/register', userData),
 
   getProfile: () => api.get('/auth/profile'),
@@ -104,6 +104,7 @@ export const ordersAPI = {
     customer_email: string;
     customer_phone: string;
     shipping_address: string;
+    fulfillment_method?: 'delivery' | 'pickup';
     comment?: string;
     items: Array<{
       product_id: number;

@@ -6,14 +6,26 @@ import { ordersAPI } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, Truck, CreditCard, Loader } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Truck, CreditCard, Loader, MapPin, Store } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
+import { companyInfo } from '../data/company';
+import {
+  DELIVERY_HINT,
+  PICKUP_HINT,
+  formatDeliveryLine,
+  getMinskDeliveryFee,
+  getOrderTotal,
+  getPickupAddressLine,
+  type FulfillmentMethod,
+} from '../utils/delivery';
 
 const Checkout: React.FC = () => {
   const { cartItems, totalPrice, clearCart, refreshCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<FulfillmentMethod>('delivery');
 
   const [formData, setFormData] = useState({
     firstName: user?.first_name || '',
@@ -32,6 +44,11 @@ const Checkout: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const deliveryFee = getMinskDeliveryFee(totalPrice, fulfillmentMethod);
+  const orderTotal = getOrderTotal(totalPrice, fulfillmentMethod);
+  const isPickup = fulfillmentMethod === 'pickup';
+  const pickupAddressLine = getPickupAddressLine();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -40,15 +57,26 @@ const Checkout: React.FC = () => {
       return;
     }
 
+    if (!isPickup && (!formData.address.trim() || !formData.city.trim() || !formData.postalCode.trim())) {
+      alert('Укажите адрес доставки');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Prepare order data
+      const shippingAddress = isPickup
+        ? `Самовывоз: ${pickupAddressLine}`
+        : `${formData.address}, ${formData.city}, ${formData.postalCode}`;
+
+      const fulfillmentNote = isPickup ? 'Способ получения: самовывоз' : 'Способ получения: доставка по Минску';
+
       const orderData = {
         customer_name: `${formData.firstName} ${formData.lastName}`.trim(),
         customer_email: formData.email,
         customer_phone: formData.phone,
-        shipping_address: `${formData.address}, ${formData.city}, ${formData.postalCode}`,
+        shipping_address: shippingAddress,
+        fulfillment_method: fulfillmentMethod,
         comment: formData.comment,
         items: cartItems.map(item => ({
           product_id: item.product_id,
@@ -64,7 +92,7 @@ const Checkout: React.FC = () => {
 
       const response = await ordersAPI.createOrder({
         ...orderData,
-        comment: [formData.comment, paymentNote].filter(Boolean).join('\n'),
+        comment: [formData.comment, fulfillmentNote, paymentNote].filter(Boolean).join('\n'),
       });
 
       const created = response.data.order;
@@ -75,15 +103,18 @@ const Checkout: React.FC = () => {
           month: 'long',
           year: 'numeric',
         }),
-        total: created?.total_amount ?? totalPrice,
+        total: created?.total_amount ?? orderTotal,
+        subtotal: totalPrice,
+        deliveryFee,
+        fulfillmentMethod,
         customer: {
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
           email: formData.email,
-          address: formData.address,
-          city: formData.city,
-          postalCode: formData.postalCode,
+          address: isPickup ? pickupAddressLine : formData.address,
+          city: isPickup ? '' : formData.city,
+          postalCode: isPickup ? '' : formData.postalCode,
           paymentMethod: formData.paymentMethod,
         },
         items: cartItems.map((item) => ({
@@ -102,7 +133,7 @@ const Checkout: React.FC = () => {
       navigate('/success', { state: { order: successOrder } });
     } catch (error: any) {
       console.error('Failed to create order:', error);
-      alert(error.response?.data?.message || 'Failed to create order');
+      alert(error.response?.data?.message || 'Не удалось оформить заказ');
     } finally {
       setIsSubmitting(false);
     }
@@ -200,10 +231,83 @@ const Checkout: React.FC = () => {
                   value={formData.phone}
                   onChange={handleInputChange}
                   required
+                  placeholder="+375 (29) 123-45-67"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
+              {/* Способ получения */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Способ получения *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                      fulfillmentMethod === 'delivery'
+                        ? 'border-[#1B4B43] bg-[#1B4B43]/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="fulfillmentMethod"
+                      value="delivery"
+                      checked={fulfillmentMethod === 'delivery'}
+                      onChange={() => setFulfillmentMethod('delivery')}
+                      className="mt-1 text-[#1B4B43] focus:ring-[#1B4B43]"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2 font-medium text-gray-900">
+                        <Truck size={18} className="text-[#1B4B43]" />
+                        Доставка по Минску
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">{DELIVERY_HINT}</p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                      fulfillmentMethod === 'pickup'
+                        ? 'border-[#1B4B43] bg-[#1B4B43]/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="fulfillmentMethod"
+                      value="pickup"
+                      checked={fulfillmentMethod === 'pickup'}
+                      onChange={() => setFulfillmentMethod('pickup')}
+                      className="mt-1 text-[#1B4B43] focus:ring-[#1B4B43]"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2 font-medium text-gray-900">
+                        <Store size={18} className="text-[#1B4B43]" />
+                        Самовывоз из офиса
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">{PICKUP_HINT}</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {isPickup ? (
+                <div className="rounded-lg border border-[#1B4B43]/20 bg-[#1B4B43]/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <MapPin size={18} className="text-[#1B4B43] flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-gray-700">
+                      <p className="font-medium text-gray-900 mb-1">Адрес самовывоза</p>
+                      <p>{pickupAddressLine}</p>
+                      <p className="mt-2 text-gray-500">
+                        {companyInfo.workingHours.weekday}, {companyInfo.workingHours.saturday}.{' '}
+                        {companyInfo.workingHours.sunday}.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
               {/* Shipping Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -248,6 +352,8 @@ const Checkout: React.FC = () => {
                   />
                 </div>
               </div>
+                </>
+              )}
 
               {/* Payment Method */}
               <div>
@@ -337,10 +443,21 @@ const Checkout: React.FC = () => {
               ))}
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between items-center text-lg font-semibold">
-                <span>Итого:</span>
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Товары</span>
                 <span>{formatPrice(totalPrice)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>{isPickup ? 'Получение' : 'Доставка'}</span>
+                <span className={deliveryFee === 0 ? 'text-[#1B4B43] font-medium' : 'font-medium'}>
+                  {formatDeliveryLine(deliveryFee, fulfillmentMethod)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400">{isPickup ? PICKUP_HINT : DELIVERY_HINT}</p>
+              <div className="flex justify-between items-center text-lg font-semibold pt-2 border-t">
+                <span>Итого:</span>
+                <span>{formatPrice(orderTotal)}</span>
               </div>
             </div>
 
@@ -351,8 +468,8 @@ const Checkout: React.FC = () => {
                 <span>Безопасная оплата</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
-                <Truck size={20} className="text-blue-600" />
-                <span>Быстрая доставка</span>
+                {isPickup ? <Store size={20} className="text-[#1B4B43]" /> : <Truck size={20} className="text-blue-600" />}
+                <span>{isPickup ? 'Самовывоз из офиса в Минске' : 'Быстрая доставка'}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <CreditCard size={20} className="text-purple-600" />

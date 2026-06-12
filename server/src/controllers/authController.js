@@ -9,6 +9,7 @@ export const validateRegister = [
   body('password').isLength({ min: 6 }),
   body('first_name').trim().isLength({ min: 1 }),
   body('last_name').trim().isLength({ min: 1 }),
+  body('phone').trim().isLength({ min: 1 }),
 ];
 
 export const validateLogin = [
@@ -58,6 +59,7 @@ export const register = asyncHandler(async (req, res) => {
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
+      phone: user.phone,
       role: user.role
     },
     token
@@ -102,6 +104,7 @@ export const login = asyncHandler(async (req, res) => {
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
+      phone: user.phone,
       role: user.role
     },
     token

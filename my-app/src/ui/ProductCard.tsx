@@ -4,6 +4,7 @@ import { useCart } from '../contexts/CartContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { ShoppingBag, Heart } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
+import CareTypeBadge from '../components/CareTypeBadge';
 
 type ProductCardProps = {
   product: {
@@ -12,6 +13,7 @@ type ProductCardProps = {
     category_name?: string;
     price: number;
     image_url?: string;
+    care_type?: string;
   };
 };
 
@@ -42,6 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         category: product.category_name || 'Категория',
         price: product.price,
         image: product.image_url || '/placeholder-product.jpg',
+        care_type: product.care_type,
       });
     }
   };
@@ -49,6 +52,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <Link to={`/product/${product.id}`} className="group flex flex-col relative">
       <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#F6F6F6] mb-4 rounded-2xl">
+        <CareTypeBadge careType={product.care_type} className="absolute top-3 left-3 z-10" />
+
         <button
           type="button"
           onClick={handleToggleFavorite}

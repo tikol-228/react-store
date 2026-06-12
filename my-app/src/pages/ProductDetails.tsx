@@ -7,6 +7,7 @@ import { productsAPI } from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { formatPrice } from '../utils/formatPrice';
+import CareTypeBadge from '../components/CareTypeBadge';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,6 +67,7 @@ const ProductDetails: React.FC = () => {
       category: product.category_name || 'Категория',
       price: product.price,
       image: product.image_url || '/placeholder-product.jpg',
+      care_type: product.care_type,
     });
   };
 
@@ -83,7 +85,8 @@ const ProductDetails: React.FC = () => {
         </Link>
 
         <section className="grid grid-cols-1 gap-6 rounded-[32px] border border-gray-100 bg-white p-4 shadow-sm sm:p-8 lg:grid-cols-2 lg:gap-12">
-          <div className="rounded-[28px] bg-[#F6F6F6] p-6">
+          <div className="relative rounded-[28px] bg-[#F6F6F6] p-6">
+            <CareTypeBadge careType={product.care_type} className="absolute left-8 top-8 z-10" />
             <div className="aspect-[4/5] overflow-hidden rounded-[24px]">
               <img
                 src={product.image_url || '/placeholder-product.jpg'}

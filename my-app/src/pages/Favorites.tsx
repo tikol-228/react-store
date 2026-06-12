@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { formatPrice } from '../utils/formatPrice';
 import { goToProductsCatalog } from '../utils/scrollToSection';
+import CareTypeBadge from '../components/CareTypeBadge';
 
 const Favorites: React.FC = () => {
   const { favorites, removeFromFavorites } = useFavorites();
@@ -60,6 +61,7 @@ const Favorites: React.FC = () => {
                 className="relative bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden group hover:shadow-lg transition-all duration-300"
               >
                 <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden">
+                  <CareTypeBadge careType={product.care_type} className="absolute top-3 left-3 z-10" />
                   <img
                     src={product.image}
                     alt={product.title}

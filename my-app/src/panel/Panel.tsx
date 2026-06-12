@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { adminAPI, productsAPI, ordersAPI, usersAPI, categoriesAPI, contactsAPI } from '../services/api';
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Trash2, CheckCircle, Users, Loader, Calendar, AlertCircle, Pencil } from 'lucide-react';
+import { Package, ShoppingBag, Trash2, CheckCircle, Users, Loader, Calendar, AlertCircle, Pencil, Phone, Mail, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { filterStoreCategories } from '../data/storeCategories';
 import { filterStoreBrands } from '../data/storeBrands';
-import { CARE_TYPE_OPTIONS, careTypeLabel, type ProductCareType } from '../data/productCareTypes';
+import { CARE_TYPE_OPTIONS, careTypesLabel, parseCareTypes, serializeCareTypes, type ProductCareType } from '../data/productCareTypes';
 import {
   SKIN_TYPE_OPTIONS,
   parseSkinTypes,
@@ -14,6 +14,7 @@ import {
   skinTypesLabel,
   type ProductSkinType,
 } from '../data/productSkinTypes';
+import { orderStatusOptionsForOrder, orderStatusSelectClass } from '../data/orderStatuses';
 import CategorySelect from '../components/CategorySelect';
 
 interface Product {
@@ -40,7 +41,7 @@ const emptyProductForm = {
   price: 0,
   category_id: '',
   brand_id: '',
-  care_type: '' as '' | ProductCareType,
+  care_types: [] as ProductCareType[],
   skin_types: [] as ProductSkinType[],
   stock_quantity: 0,
   image_url: '',
@@ -92,6 +93,46 @@ interface DashboardStats {
   unreadNotifications: number;
 }
 
+interface UserOrderStats {
+  totalOrders: number;
+  totalAmount: number;
+  byMonth: { key: string; label: string; count: number; amount: number }[];
+}
+
+function ordersForUser(user: User, allOrders: Order[]): Order[] {
+  const email = user.email.toLowerCase();
+  return allOrders.filter(
+    (order) =>
+      order.status !== 'cancelled' &&
+      (order.user_id === user.id ||
+        order.customer_email?.toLowerCase() === email)
+  );
+}
+
+function buildUserOrderStats(userOrders: Order[]): UserOrderStats {
+  const byMonthMap = new Map<string, { label: string; count: number; amount: number }>();
+
+  for (const order of userOrders) {
+    const date = new Date(order.created_at);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const label = date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+    const current = byMonthMap.get(key) ?? { label, count: 0, amount: 0 };
+    current.count += 1;
+    current.amount += Number(order.total_amount) || 0;
+    byMonthMap.set(key, current);
+  }
+
+  const byMonth = Array.from(byMonthMap.entries())
+    .map(([key, value]) => ({ key, ...value }))
+    .sort((a, b) => b.key.localeCompare(a.key));
+
+  return {
+    totalOrders: userOrders.length,
+    totalAmount: userOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0),
+    byMonth,
+  };
+}
+
 const Panel: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'users' | 'bookings'>('dashboard');
@@ -104,6 +145,15 @@ const Panel: React.FC = () => {
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [brands, setBrands] = useState<{ id: number; name: string }[]>([]);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+
+  const userOrderStatsMap = useMemo(() => {
+    const map = new Map<number, UserOrderStats>();
+    for (const u of users) {
+      map.set(u.id, buildUserOrderStats(ordersForUser(u, orders)));
+    }
+    return map;
+  }, [users, orders]);
 
   const [adminNewOrder, setAdminNewOrder] = useState({
     customer_name: '',
@@ -133,7 +183,7 @@ const Panel: React.FC = () => {
         await Promise.all([
         adminAPI.getDashboardStats(),
         productsAPI.getProducts({ limit: 200 }),
-        ordersAPI.getOrders({ limit: 50 }),
+        ordersAPI.getOrders({ limit: 500 }),
         usersAPI.getUsers(),
         categoriesAPI.getCategories(),
         categoriesAPI.getBrands(),
@@ -219,7 +269,7 @@ const Panel: React.FC = () => {
       image_url: newProduct.image_url || undefined,
       category_id: categoryId,
       brand_id: brandId,
-      care_type: newProduct.care_type as ProductCareType,
+      care_type: serializeCareTypes(newProduct.care_types) || undefined,
       skin_type: serializeSkinTypes(newProduct.skin_types) || undefined,
     };
   };
@@ -232,7 +282,7 @@ const Panel: React.FC = () => {
       price: product.price,
       category_id: product.category_id ? String(product.category_id) : '',
       brand_id: product.brand_id ? String(product.brand_id) : '',
-      care_type: (product.care_type as ProductCareType) || '',
+      care_types: parseCareTypes(product.care_type),
       skin_types: parseSkinTypes(product.skin_type),
       stock_quantity: product.stock_quantity,
       image_url: product.image_url || '',
@@ -250,7 +300,7 @@ const Panel: React.FC = () => {
         newProduct.stock_quantity === undefined ||
         !newProduct.category_id ||
         !newProduct.brand_id ||
-        !newProduct.care_type ||
+        newProduct.care_types.length === 0 ||
         newProduct.skin_types.length === 0
       ) {
         alert(
@@ -318,7 +368,7 @@ const Panel: React.FC = () => {
         quantity: 1,
       });
       const [ordersRes, statsRes] = await Promise.all([
-        ordersAPI.getOrders({ limit: 50 }),
+        ordersAPI.getOrders({ limit: 500 }),
         adminAPI.getDashboardStats(),
       ]);
       setOrders(ordersRes.data.orders || []);
@@ -542,28 +592,34 @@ const Panel: React.FC = () => {
                   onChange={(brand_id) => setNewProduct({ ...newProduct, brand_id })}
                   placeholder="Выберите бренд"
                 />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Тип ухода
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Тип ухода <span className="font-normal text-gray-500">(можно выбрать несколько)</span>
                   </label>
-                  <select
-                    value={newProduct.care_type}
-                    onChange={(e) =>
-                      setNewProduct({
-                        ...newProduct,
-                        care_type: e.target.value as '' | ProductCareType,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    required
-                  >
-                    <option value="">Выберите тип ухода</option>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md border border-gray-200 p-3 bg-gray-50/50">
                     {CARE_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
+                      <label
+                        key={opt.value}
+                        className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={newProduct.care_types.includes(opt.value)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setNewProduct((prev) => ({
+                              ...prev,
+                              care_types: checked
+                                ? [...prev.care_types, opt.value]
+                                : prev.care_types.filter((t) => t !== opt.value),
+                            }));
+                          }}
+                          className="rounded border-gray-300 text-[#1B4B43] focus:ring-[#1B4B43]"
+                        />
                         {opt.label}
-                      </option>
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -658,7 +714,7 @@ const Panel: React.FC = () => {
                           <div className="text-gray-400">{product.brand_name || '—'}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          <div>{careTypeLabel(product.care_type)}</div>
+                          <div>{careTypesLabel(product.care_type)}</div>
                           <div className="text-gray-400">{skinTypesLabel(product.skin_type)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -721,8 +777,8 @@ const Panel: React.FC = () => {
                   required
                 />
                 <input
-                  type="text"
-                  placeholder="Телефон *"
+                  type="tel"
+                  placeholder="Телефон * (например +375291234567)"
                   value={adminNewOrder.customer_phone}
                   onChange={(e) => setAdminNewOrder({ ...adminNewOrder, customer_phone: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-md"
@@ -789,67 +845,180 @@ const Panel: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold">Заказы ({orders.length})</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Нажмите «Подробнее», чтобы увидеть телефон, адрес и состав заказа
+              </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID заказа</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Клиент</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Клиент</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Телефон</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        <span>#{order.id}</span>
-                        {order.comment?.startsWith('[DEMO]') && (
-                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                            demo
-                          </span>
+                  {orders.map((order) => {
+                    const isExpanded = expandedOrderId === order.id;
+                    const phoneDigits = order.customer_phone?.replace(/[^\d+]/g, '') || '';
+                    return (
+                      <React.Fragment key={order.id}>
+                        <tr className={isExpanded ? 'bg-[#1B4B43]/5' : undefined}>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <span>#{order.id}</span>
+                            {order.comment?.startsWith('[DEMO]') && (
+                              <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                                demo
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            <div className="font-medium">{order.customer_name}</div>
+                            {order.user_id && (
+                              <div className="text-xs text-gray-400 mt-0.5">Аккаунт #{order.user_id}</div>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-sm">
+                            {order.customer_phone ? (
+                              <a
+                                href={`tel:${phoneDigits}`}
+                                className="inline-flex items-center gap-1.5 text-[#1B4B43] font-medium hover:underline whitespace-nowrap"
+                              >
+                                <Phone size={14} className="shrink-0" />
+                                {order.customer_phone}
+                              </a>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-sm">
+                            {order.customer_email ? (
+                              <a
+                                href={`mailto:${order.customer_email}`}
+                                className="inline-flex items-center gap-1.5 text-[#1B4B43] hover:underline break-all"
+                              >
+                                <Mail size={14} className="shrink-0" />
+                                {order.customer_email}
+                              </a>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                            {formatPrice(Number(order.total_amount))}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <select
+                              value={order.status}
+                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                              className={orderStatusSelectClass(order.status)}
+                            >
+                              {orderStatusOptionsForOrder(order).map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(order.created_at).toLocaleDateString('ru-RU')}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-[#1B4B43] border border-[#1B4B43]/30 rounded-md hover:bg-[#1B4B43]/5"
+                              >
+                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                {isExpanded ? 'Скрыть' : 'Подробнее'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteOrder(order.id)}
+                                className="text-red-600 hover:text-red-900 p-1"
+                                aria-label="Удалить заказ"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className="bg-gray-50/80">
+                            <td colSpan={8} className="px-4 py-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div className="space-y-2">
+                                  <h4 className="font-semibold text-gray-800">Контакты клиента</h4>
+                                  <p className="flex items-start gap-2 text-gray-700">
+                                    <Phone size={16} className="shrink-0 mt-0.5 text-[#1B4B43]" />
+                                    {order.customer_phone ? (
+                                      <a href={`tel:${phoneDigits}`} className="text-[#1B4B43] font-medium hover:underline">
+                                        {order.customer_phone}
+                                      </a>
+                                    ) : (
+                                      'Телефон не указан'
+                                    )}
+                                  </p>
+                                  <p className="flex items-start gap-2 text-gray-700 break-all">
+                                    <Mail size={16} className="shrink-0 mt-0.5 text-[#1B4B43]" />
+                                    {order.customer_email ? (
+                                      <a href={`mailto:${order.customer_email}`} className="text-[#1B4B43] hover:underline">
+                                        {order.customer_email}
+                                      </a>
+                                    ) : (
+                                      'Email не указан'
+                                    )}
+                                  </p>
+                                  <p className="flex items-start gap-2 text-gray-700">
+                                    <MapPin size={16} className="shrink-0 mt-0.5 text-[#1B4B43]" />
+                                    {order.shipping_address || 'Адрес не указан'}
+                                  </p>
+                                  {order.comment && (
+                                    <p className="text-gray-600 pt-2 border-t border-gray-200 whitespace-pre-wrap">
+                                      <span className="font-medium text-gray-800">Комментарий: </span>
+                                      {order.comment}
+                                    </p>
+                                  )}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-gray-800 mb-2">
+                                    Состав заказа ({order.items?.length ?? 0})
+                                  </h4>
+                                  {order.items && order.items.length > 0 ? (
+                                    <ul className="space-y-2">
+                                      {order.items.map((item: { id?: number; product_id: number; product_name?: string; quantity: number; price: number }) => (
+                                        <li
+                                          key={`${order.id}-${item.product_id}-${item.id ?? ''}`}
+                                          className="flex justify-between gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2"
+                                        >
+                                          <span className="text-gray-800">
+                                            {item.product_name || `Товар #${item.product_id}`}{' '}
+                                            <span className="text-gray-500">× {item.quantity}</span>
+                                          </span>
+                                          <span className="font-medium text-gray-900 whitespace-nowrap">
+                                            {formatPrice(item.price * item.quantity)}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <p className="text-gray-500">Позиции не найдены</p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div>{order.customer_name}</div>
-                        {order.comment && (
-                          <div className="text-xs text-gray-500 mt-0.5 max-w-[200px] truncate" title={order.comment}>
-                            {order.comment}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(Number(order.total_amount))}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                          className="text-sm border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="pending">В ожидании</option>
-                          <option value="processing">В обработке</option>
-                          <option value="shipped">Отправлено</option>
-                          <option value="delivered">Доставлено</option>
-                          <option value="cancelled">Отменено</option>
-                        </select>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleDeleteOrder(order.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -961,45 +1130,99 @@ const Panel: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold">Пользователи ({users.length})</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Заказы и суммы по месяцам (без отменённых). Учитываются заказы по аккаунту и по email.
+              </p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[960px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Телефон</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Заказов</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[220px]">По месяцам</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Регистрация</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
+                  {users.map((user) => {
+                    const stats = userOrderStatsMap.get(user.id) ?? {
+                      totalOrders: 0,
+                      totalAmount: 0,
+                      byMonth: [],
+                    };
+                    return (
                     <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {user.first_name} {user.last_name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.email}
+                      <td className="px-4 py-4 text-sm text-gray-900">
+                        <a href={`mailto:${user.email}`} className="text-[#1B4B43] hover:underline break-all">
+                          {user.email}
+                        </a>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.phone ? (
+                          <a
+                            href={`tel:${user.phone.replace(/[^\d+]/g, '')}`}
+                            className="text-[#1B4B43] hover:underline"
+                          >
+                            {user.phone}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {stats.totalOrders}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-[#1B4B43]">
+                        {formatPrice(stats.totalAmount)}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {stats.byMonth.length > 0 ? (
+                          <ul className="space-y-1">
+                            {stats.byMonth.map((month) => (
+                              <li key={month.key} className="capitalize">
+                                <span className="font-medium text-gray-800">{month.label}</span>
+                                {' — '}
+                                {month.count}{' '}
+                                {month.count === 1 ? 'заказ' : month.count < 5 ? 'заказа' : 'заказов'}
+                                {' · '}
+                                <span className="text-[#1B4B43]">{formatPrice(month.amount)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-gray-400">нет заказов</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.role}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(user.created_at).toLocaleDateString()}
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(user.created_at).toLocaleDateString('ru-RU')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         {user.role !== 'admin' && (
                           <button
+                            type="button"
                             onClick={() => handleDeleteUser(user.id)}
                             className="text-red-600 hover:text-red-900"
+                            aria-label="Удалить пользователя"
                           >
                             <Trash2 size={16} />
                           </button>
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

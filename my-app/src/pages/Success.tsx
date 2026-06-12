@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { CheckCircle2, Download, Printer, Home } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
+import { formatDeliveryLine } from '../utils/delivery';
 
 const Success: React.FC = () => {
   const location = useLocation();
@@ -42,11 +43,19 @@ const Success: React.FC = () => {
             <div id="receipt" className="space-y-8">
               <div className="flex justify-between items-start pb-8 border-b border-gray-100">
                 <div>
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Информация о доставке</h3>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                    {order.fulfillmentMethod === 'pickup' ? 'Самовывоз' : 'Информация о доставке'}
+                  </h3>
                   <p className="text-[#1A1A1A] font-bold text-lg">{order.customer.firstName} {order.customer.lastName}</p>
                   <p className="text-gray-500">{order.customer.phone}</p>
-                  <p className="text-gray-500">{order.customer.address}, {order.customer.city}</p>
-                  <p className="text-gray-500">{order.customer.postalCode}</p>
+                  {order.fulfillmentMethod === 'pickup' ? (
+                    <p className="text-gray-500">{order.customer.address}</p>
+                  ) : (
+                    <>
+                      <p className="text-gray-500">{order.customer.address}, {order.customer.city}</p>
+                      <p className="text-gray-500">{order.customer.postalCode}</p>
+                    </>
+                  )}
                 </div>
                 <div className="text-right">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Дата заказа</h3>
@@ -85,12 +94,16 @@ const Success: React.FC = () => {
 
               <div className="pt-8 border-t border-gray-100 space-y-3">
                 <div className="flex justify-between text-gray-500">
-                  <span>Сумма</span>
-                  <span className="font-bold text-[#1A1A1A]">{formatPrice(order.total)}</span>
+                  <span>Товары</span>
+                  <span className="font-bold text-[#1A1A1A]">
+                    {formatPrice(order.subtotal ?? order.total - (order.deliveryFee ?? 0))}
+                  </span>
                 </div>
                 <div className="flex justify-between text-gray-500">
-                  <span>Доставка</span>
-                  <span className="font-bold text-[#1B4B43]">Бесплатно</span>
+                  <span>{order.fulfillmentMethod === 'pickup' ? 'Получение' : 'Доставка'}</span>
+                  <span className={`font-bold ${(order.deliveryFee ?? 0) === 0 ? 'text-[#1B4B43]' : 'text-[#1A1A1A]'}`}>
+                    {formatDeliveryLine(order.deliveryFee ?? 0, order.fulfillmentMethod)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-2xl font-bold text-[#1A1A1A] pt-4">
                   <span>Итого к оплате</span>

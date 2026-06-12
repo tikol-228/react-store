@@ -1,7 +1,7 @@
 import { body, validationResult } from 'express-validator';
 import { Product } from '../models/Product.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { isValidCareType } from '../constants/productCareTypes.js';
+import { normalizeCareTypeInput } from '../constants/productCareTypes.js';
 import { normalizeSkinTypeInput } from '../constants/productSkinTypes.js';
 
 // Validation rules
@@ -12,26 +12,35 @@ export const validateProduct = [
   body('stock_quantity').isInt({ min: 0 }),
   body('category_id').optional({ nullable: true }).isInt(),
   body('brand_id').optional({ nullable: true }).isInt(),
-  body('care_type')
-    .optional({ nullable: true })
-    .custom((value) => value == null || value === '' || isValidCareType(value))
-    .withMessage('Invalid care_type'),
 ];
 
-function withNormalizedSkinType(body) {
-  const raw = body.skin_types ?? body.skin_type;
-  const { skin_types: _skinTypes, ...rest } = body;
-  return { ...rest, skin_type: normalizeSkinTypeInput(raw) };
+function withNormalizedProductTypes(body) {
+  const careRaw = body.care_types ?? body.care_type;
+  const skinRaw = body.skin_types ?? body.skin_type;
+  const { care_types: _careTypes, skin_types: _skinTypes, ...rest } = body;
+  return {
+    ...rest,
+    care_type: normalizeCareTypeInput(careRaw),
+    skin_type: normalizeSkinTypeInput(skinRaw),
+  };
 }
 
-function assertSkinTypePresent(body) {
+function assertProductTypesPresent(body) {
+  const care_type = normalizeCareTypeInput(body.care_types ?? body.care_type);
   const skin_type = normalizeSkinTypeInput(body.skin_types ?? body.skin_type);
+
+  if (!care_type) {
+    const error = new Error('Укажите хотя бы один тип ухода');
+    error.statusCode = 400;
+    throw error;
+  }
   if (!skin_type) {
     const error = new Error('Укажите хотя бы один тип кожи');
     error.statusCode = 400;
     throw error;
   }
-  return withNormalizedSkinType({ ...body, skin_type });
+
+  return withNormalizedProductTypes({ ...body, care_type, skin_type });
 }
 
 // Get all products
@@ -84,7 +93,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const productData = assertSkinTypePresent(req.body);
+  const productData = assertProductTypesPresent(req.body);
   const product = await Product.create({
     ...productData,
     description: req.body.description?.trim() ?? '',
@@ -112,7 +121,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
   }
 
   const { id } = req.params;
-  const product = await Product.update(id, assertSkinTypePresent(req.body));
+  const product = await Product.update(id, assertProductTypesPresent(req.body));
 
   if (!product) {
     const error = new Error('Product not found');
